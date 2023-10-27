@@ -1,7 +1,6 @@
-import numpy as np
 import torch
 from torch import nn
-from yuccalib.network_architectures.utils import get_steps_for_sliding_window
+from yuccalib.network_architectures.utils.get_steps_for_sliding_window import get_steps_for_sliding_window
 
 
 class YuccaNet(nn.Module):
@@ -26,12 +25,10 @@ class YuccaNet(nn.Module):
         self.eval()
         with torch.no_grad():
             if mode == '3D':
-                #pred = self._predict3D(data, patch_size, overlap)
                 predict = self._predict3D
-            if mode == '2.5D':
-                pred = self._predict25D(data, patch_size, overlap)
             if mode == '2D':
-                pred = self._predict2D(data, patch_size, overlap)
+                predict = self._predict2D
+
             pred = predict(data, patch_size, overlap)
             if mirror:
                 pred += torch.flip(predict(torch.flip(data, (2, )), patch_size, overlap), (2, ))
@@ -65,9 +62,6 @@ class YuccaNet(nn.Module):
                     canvas[:, :, xs:xs+px, ys:ys+py, zs:zs+pz] += out
         return canvas
 
-    def _predict25D(self, data, patch_size, overlap):
-        pass
-
     def _predict2D(self, data, patch_size, overlap):
         """
         Sliding window prediction implementation
@@ -96,7 +90,6 @@ class YuccaNet(nn.Module):
                     out = self.forward(data[:, :, xs:xs+px, ys:ys+py])
                     canvas[:, :, xs:xs+px, ys:ys+py] += out
         return canvas
-
 
 class InitWeights_He(object):
     def __init__(self, neg_slope=1e-2):

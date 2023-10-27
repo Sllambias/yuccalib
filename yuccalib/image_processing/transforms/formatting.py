@@ -27,7 +27,7 @@ class RemoveSegChannelAxis(YuccaTransform):
 
 
 class NumpyToTorch(YuccaTransform):
-    def __init__(self, data_key="data", seg_key="seg", seg_dtype="int"):
+    def __init__(self, data_key="image", seg_key="seg", seg_dtype="int"):
         self.data_key = data_key
         self.seg_key = seg_key
         self.seg_dtype = seg_dtype
@@ -47,6 +47,9 @@ class NumpyToTorch(YuccaTransform):
         return data, seg
 
     def __call__(self, **data_dict):
+        assert (len(data_dict[self.data_key].shape) == 5 or len(data_dict[self.data_key].shape) == 4), f"Incorrect data size or shape.\
+            \nShould be (b, c, x, y, z) or (b, c, x, y) and is: {data_dict[self.data_key].shape}"
         self.get_params()
-        data_dict[self.data_key], data_dict[self.seg_key] = self.__convert__(data_dict[self.data_key], data_dict[self.seg_key])
+        data_dict[self.data_key], data_dict[self.seg_key] = self.__convert__(data_dict[self.data_key],
+                                                                             data_dict[self.seg_key])
         return data_dict

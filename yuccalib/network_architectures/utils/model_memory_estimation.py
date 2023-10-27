@@ -23,6 +23,7 @@ Max memory consumption = m + f*batch_size*b + d*g + o*m
 import torch
 import numpy as np
 import yucca
+import yuccalib
 import warnings
 from yuccalib.utils.files_and_folders import recursive_find_python_class
 from batchgenerators.utilities.file_and_folder_operations import join
@@ -106,14 +107,10 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
         patch_size = [32, 32, 32] if not model_name == 'UNetR' else [64, 64, 64]
 
     absolute_max = 128**3
-   # if model_name == 'MedNeXt':
-   #     return 2, (128, 128, 128)
-   #     for idx, val in enumerate(max_patch_size):
-   #         max_patch_size[idx] = min(128, val)
-            
-    model = recursive_find_python_class(folder=[join(yucca.__path__[0], 'architectures')],
-                                                class_name=model_name,
-                                                current_module='yucca.architectures')
+
+    model = recursive_find_python_class(folder=[join(yuccalib.__path__[0], 'network_architectures')],
+                                        class_name=model_name,
+                                        current_module='yuccalib.network_architectures')
     model = model(input_channels=modalities, num_classes=num_classes, conv_op=conv, patch_size=patch_size, dropout_op=dropout, norm_op=norm)
 
     est = 0
@@ -133,9 +130,9 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
             if patch_size[idx] + 16 < max_patch_size[idx]:
                 patch_size[idx] += 16
                 if model_name == 'UNetR': # we need to re-instantiate it because of the ViT
-                    model = recursive_find_python_class(folder=[join(yucca.__path__[0], 'architectures')],
-                                                    class_name=model_name,
-                                                    current_module='yucca.architectures')
+                    model = recursive_find_python_class(folder=[join(yuccalib.__path__[0], 'network_architectures')],
+                                                        class_name=model_name,
+                                                        current_module='yuccalib.network_architectures')
                     model = model(input_channels=modalities, conv_op=conv, patch_size=patch_size, dropout_op=dropout, norm_op=norm)
 
                 if idx < len(patch_size)-1:
@@ -160,7 +157,7 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
                 # Unless batch_size is maxed
                 if not max_batch_size > batch_size:
                     OOM_OR_MAXED = True
-           
+
                 if len(patch_size) == 3:
                     batch_size += 2
                 else:
@@ -168,7 +165,3 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
         except torch.cuda.OutOfMemoryError:
             OOM_OR_MAXED = True
     return final_batch_size, final_patch_size
-
-#%%
-
-#%%
