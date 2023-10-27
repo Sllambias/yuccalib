@@ -1,6 +1,6 @@
 import numpy as np
 
-def remove_small_objects(array=None, min_size, voxel_spacing):
+def remove_small_objects(array:np.ndarray, min_size: float | int, voxel_spacing: np.ndarray | list):
     """
     This function will remove any connected components smaller
     than the minimum size in mm
