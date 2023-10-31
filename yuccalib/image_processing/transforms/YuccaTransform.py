@@ -4,6 +4,7 @@ from abc import abstractmethod
 
 class YuccaTransform(AbstractTransform):
 
+
     @abstractmethod
     def get_params(self):
         """
@@ -34,4 +35,12 @@ class YuccaTransform(AbstractTransform):
         This is extremely important for transforms
         such as rotation, where we must ensure
         data modalities and labels remain registered.
+        """
+    
+    @abstractmethod
+    def __call__(self):
+        """
+        This will be of the form __call__(self, packed_dict: dict = None, **unpacked_dict):
+        which allows calling it as either transform(data_dict) or transform(**data_dict),
+        supporting both Torch pipelines and batchgenerators.
         """
