@@ -31,6 +31,7 @@ class DownsampleSegForDS(YuccaTransform):
             downsampled_segs.append(canvas)
         return downsampled_segs
 
-    def __call__(self, **data_dict):
+    def __call__(self, packed_data_dict = None, **unpacked_data_dict):
+        data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
         data_dict[self.seg_key] = self.__downsample__(data_dict[self.seg_key], self.factors)
         return data_dict

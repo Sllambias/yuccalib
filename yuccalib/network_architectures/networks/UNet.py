@@ -135,7 +135,7 @@ class UNet(YuccaNet):
             print("initializing weights")
             self.apply(self.weightInitializer)
 
-    def forward(self, x):
+    def forward(self, x):        
         x0 = self.in_conv(x)
 
         # Encoder path

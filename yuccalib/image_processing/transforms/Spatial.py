@@ -57,6 +57,8 @@ class Spatial(YuccaTransform):
 		self.p_scale_per_sample = p_scale_per_sample
 		self.scale_factor = scale_factor
 
+		
+
 	@staticmethod
 	def get_params(deform_alpha: Tuple[float],
 	       			deform_sigma: Tuple[float],
@@ -65,7 +67,8 @@ class Spatial(YuccaTransform):
 					z_rot: Tuple[float],
 					scale_factor: Tuple[float]
 					) -> Tuple[float]:
-		
+
+
 		if deform_alpha:
 			deform_alpha = float(np.random.uniform(*deform_alpha))
 		if deform_sigma:
@@ -147,21 +150,22 @@ class Spatial(YuccaTransform):
 			return imageCanvas, segCanvas
 		return imageCanvas, segVolume
 
-	def __call__(self, **data_dict):
-			assert (len(data_dict[self.data_key].shape) == 5 or len(data_dict[self.data_key].shape) == 4), f"Incorrect data size or shape.\
-				\nShould be (c, x, y, z) or (c, x, y) and is: {data_dict[self.data_key].shape}"
+	def __call__(self, packed_data_dict = None, **unpacked_data_dict):
+		data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
+		assert (len(data_dict[self.data_key].shape) == 5 or len(data_dict[self.data_key].shape) == 4), f"Incorrect data size or shape.\
+			\nShould be (c, x, y, z) or (c, x, y) and is: {data_dict[self.data_key].shape}"
 
-			deform_alpha, deform_sigma, x_rot_rad, y_rot_rad, \
-			z_rot_rad, scale_factor = self.get_params(deform_alpha = self.deform_alpha, 
-													  deform_sigma = self.deform_sigma,
-													  x_rot = self.x_rot_in_degrees, 
-													  y_rot = self.y_rot_in_degrees,
-													  z_rot = self.z_rot_in_degrees, 
-													  scale_factor = self.scale_factor)
+		deform_alpha, deform_sigma, x_rot_rad, y_rot_rad, \
+		z_rot_rad, scale_factor = self.get_params(deform_alpha = self.deform_alpha, 
+													deform_sigma = self.deform_sigma,
+													x_rot = self.x_rot_in_degrees, 
+													y_rot = self.y_rot_in_degrees,
+													z_rot = self.z_rot_in_degrees, 
+													scale_factor = self.scale_factor)
 
-			data_dict[self.data_key], data_dict[self.seg_key] = self.__CropDeformRotateScale__(
-							data_dict[self.data_key], data_dict[self.seg_key], self.patch_size,
-							deform_alpha, deform_sigma,
-							x_rot_rad, y_rot_rad, z_rot_rad,
-							scale_factor, self.skip_seg)
-			return data_dict
+		data_dict[self.data_key], data_dict[self.seg_key] = self.__CropDeformRotateScale__(
+						data_dict[self.data_key], data_dict[self.seg_key], self.patch_size,
+						deform_alpha, deform_sigma,
+						x_rot_rad, y_rot_rad, z_rot_rad,
+						scale_factor, self.skip_seg)
+		return data_dict

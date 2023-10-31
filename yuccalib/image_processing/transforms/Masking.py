@@ -18,5 +18,6 @@ class Masking(YuccaTransform):
     def __mask__(self, image, seg, crop_start_idx):
         pass
     
-    def __call__(self, **data_dict):
+    def __call__(self, packed_data_dict = None, **unpacked_data_dict):
+        data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
         return data_dict

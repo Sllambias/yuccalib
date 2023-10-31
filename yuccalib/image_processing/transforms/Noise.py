@@ -31,7 +31,8 @@ class AdditiveNoise(YuccaTransform):
         gauss = np.random.normal(mean, sigma, imageVolume.shape)
         return imageVolume + gauss
     
-    def __call__(self, **data_dict):
+    def __call__(self, packed_data_dict = None, **unpacked_data_dict):
+        data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
         assert (len(data_dict[self.data_key].shape) == 5 or len(data_dict[self.data_key].shape) == 4), f"Incorrect data size or shape.\
             \nShould be (c, x, y, z) or (c, x, y) and is: {data_dict[self.data_key].shape}"
         
@@ -72,7 +73,8 @@ class MultiplicativeNoise(YuccaTransform):
         gauss = np.random.normal(mean, sigma, imageVolume.shape)
         return imageVolume + imageVolume*gauss
     
-    def __call__(self, **data_dict):
+    def __call__(self, packed_data_dict = None, **unpacked_data_dict):
+        data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
         assert (len(data_dict[self.data_key].shape) == 5 or len(data_dict[self.data_key].shape) == 4), f"Incorrect data size or shape.\
             \nShould be (b, c, x, y, z) or (b, c, x, y) and is: {data_dict[self.data_key].shape}"
         
