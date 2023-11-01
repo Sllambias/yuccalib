@@ -7,8 +7,6 @@ from typing import Union, Callable
 # Batchgenerators.
 def augment_gamma(data_sample, gamma_range=(0.5, 2), invert_image=False, epsilon=1e-7, per_channel=False,
                   retain_stats: Union[bool, Callable[[], bool]] = False):
-    print(data_sample.shape)
-    print(data_sample[0])
     if invert_image:
         data_sample = - data_sample
 
