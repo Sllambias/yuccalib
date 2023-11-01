@@ -1,0 +1,23 @@
+from setuptools import setup, find_namespace_packages
+
+setup(name='yuccalib',
+      packages=find_namespace_packages(include=["yuccalib", "yuccalib.*"]),
+      version='0.0.1',
+      description="Everything you need to handle medical data like a true yucca plant.",
+      url='https://github.com/Sllambias/yuccalib',
+      author='Department of Computer Science, University of Copenhagen',
+      author_email='llambias@live.com',
+      license='Apache License Version 2.0, January 2004',
+      install_requires=['numpy>=1.23',
+                        'batchgenerators>=0.25',
+                        'connected_components_3d',
+                        'monai>=1.3.0',
+                        'nibabel>=5.1.0',
+                        'Pillow>=10.1.0',
+                        'pytest>=7.4.3',
+                        'scipy>=1.11.3',
+                        'setuptools>=68.0.0',
+                        'scikit-image',
+                        'timm>=0.9.8',
+                        ],
+      )
