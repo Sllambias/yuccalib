@@ -29,5 +29,4 @@ class CopyImageToSeg(YuccaTransform):
             \nShould be (b, c, x, y, z) or (b, c, x, y) and is: {data_dict[self.data_key].shape}"
 
         data_dict[self.data_key], data_dict[self.seg_key] = self.__copy__(data_dict[self.data_key])
-        print(data_dict[self.data_key].shape, data_dict[self.seg_key].shape)
         return data_dict
