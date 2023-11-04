@@ -100,16 +100,14 @@ def merge_softmax_from_folders(folders:list, outpath, method='sum'):
     del files_for_case, properties_for_case
 
 
-class BatchWriteSegFromLogits(BasePredictionWriter):
+class WriteSegFromLogits(BasePredictionWriter):
     def __init__(self, output_dir, write_interval):
         super().__init__(write_interval)
         self.output_dir = output_dir
 
     def write_on_batch_end(self, trainer, pl_module, data_dict, batch_indices, *args):
-        print(trainer, pl_module, data_dict, batch_indices, *args)
         # this will create N (num processes) files in `output_dir` each containing
         # the predictions of it's respective rank
         logits, properties, case_id = data_dict['logits'], data_dict['properties'], data_dict['case_id']
         save_segmentation_from_logits(logits, join(self.output_dir, f"{case_id}.nii.gz"),
                                       properties=properties)
-
