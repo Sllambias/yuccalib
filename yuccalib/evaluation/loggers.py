@@ -1,14 +1,21 @@
 from lightning.pytorch.loggers.logger import Logger
 from lightning.pytorch.utilities import rank_zero_only
 from time import localtime, strftime, time
-from batchgenerators.utilities.file_and_folder_operations import join
+from batchgenerators.utilities.file_and_folder_operations import (
+    join,
+    maybe_mkdir_p,
+    isdir,
+    subdirs,
+)
 import sys
+import os
 
 
 class TXTLogger(Logger):
-    def __init__(self, savedir, steps_per_epoch):
+    def __init__(self, save_dir, name, steps_per_epoch):
         super().__init__()
-        self.savedir = savedir
+        self._name = name
+        self._save_dir = save_dir
         self.steps_per_epoch = steps_per_epoch
         self.create_logfile()
         self.previous_epoch = 0
@@ -16,19 +23,25 @@ class TXTLogger(Logger):
 
     @property
     def name(self):
-        return "TXTLogger"
+        return self._name
 
     @property
     def version(self):
-        # Return the experiment version, int or str.
         return "0.1"
+
+    @property
+    def save_dir(self):
+        return self._save_dir
 
     @rank_zero_only
     def create_logfile(self):
-        initial_time_obj = localtime()
+        if not self.name:
+            self.name = localtime()
+        maybe_mkdir_p(join(self.save_dir, self.name))
         self.log_file = join(
-            self.savedir,
-            "log_" + strftime("%Y_%m_%d_%H_%M_%S", initial_time_obj) + ".txt",
+            self.save_dir,
+            self.name,
+            "training_log.txt",
         )
         with open(self.log_file, "w") as f:
             f.write("Starting model training")
@@ -54,18 +67,20 @@ class TXTLogger(Logger):
                 epoch_end_time = time()
                 f.write("\n")
                 f.write("\n")
-                f.write(f"{t} {'Current Epoch:':20} {current_epoch}")
+                print("\n")
+                f.write(f"{t} {'Current Epoch:':20} {current_epoch} \n")
                 f.write(
-                    f"{t} {'Epoch Time:':20} {epoch_end_time-self.epoch_start_time}"
+                    f"{t} {'Epoch Time:':20} {epoch_end_time-self.epoch_start_time} \n"
                 )
                 print(f"{t} {'Current Epoch:':20} {current_epoch}")
+                print(f"{t} {'Epoch Time:':20} {epoch_end_time-self.epoch_start_time}")
                 self.previous_epoch = current_epoch
                 self.epoch_start_time = epoch_end_time
-                f.write("\n")
             for key in metrics:
-                f.write(f"{t} {key+':':20} {metrics[key]}")
+                if key == "epoch":
+                    continue
+                f.write(f"{t} {key+':':20} {metrics[key]} \n")
                 print(f"{t} {key+':':20} {metrics[key]}")
-                f.write("\n")
         sys.stdout.flush()
 
     @rank_zero_only
