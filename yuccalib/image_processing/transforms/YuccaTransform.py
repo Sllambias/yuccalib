@@ -3,8 +3,6 @@ from abc import abstractmethod
 
 
 class YuccaTransform(AbstractTransform):
-
-
     @abstractmethod
     def get_params(self):
         """
@@ -36,7 +34,7 @@ class YuccaTransform(AbstractTransform):
         such as rotation, where we must ensure
         data modalities and labels remain registered.
         """
-    
+
     @abstractmethod
     def __call__(self):
         """
