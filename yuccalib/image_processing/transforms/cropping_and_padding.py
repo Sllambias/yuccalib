@@ -28,7 +28,7 @@ class CropPad(YuccaTransform):
     def get_params(input_shape, target_shape):
         target_image_shape = (input_shape[0], *target_shape)
         target_seg_shape = (1, *target_shape)
-        return target_image_shape, target_seg_shape
+        return target_image_shape, target_seg_shape, input_shape
 
     def __croppad__(
         self,
@@ -136,7 +136,7 @@ class CropPad(YuccaTransform):
         )
         return image_out, seg_out
 
-    def generate_2D_batch_from_3D(
+    def generate_2D_case_from_3D(
         self, image, seg, image_properties, target_image_shape, target_seg_shape
     ):
         """
@@ -195,7 +195,7 @@ class CropPad(YuccaTransform):
                         )
                     ]
 
-        image_out[:, :, :, :] = np.pad(
+        image_out[:, :, :] = np.pad(
             image[
                 :,
                 x_idx,
@@ -209,7 +209,7 @@ class CropPad(YuccaTransform):
         if seg is None:
             return image_out, None
 
-        seg_out[:, :, :, :] = np.pad(
+        seg_out[:, :, :] = np.pad(
             seg[
                 :,
                 x_idx,
@@ -221,7 +221,7 @@ class CropPad(YuccaTransform):
 
         return image_out, seg_out
 
-    def generate_2D_batch_from_2D(
+    def generate_2D_case_from_2D(
         self, image, seg, image_properties, target_image_shape, target_seg_shape
     ):
         """
@@ -276,7 +276,7 @@ class CropPad(YuccaTransform):
                         )
                     ]
 
-        image_out[:, :, :, :] = np.pad(
+        image_out[:, :, :] = np.pad(
             image[
                 :,
                 crop_start_idx[0] : crop_start_idx[0] + self.patch_size[0],
@@ -289,7 +289,7 @@ class CropPad(YuccaTransform):
         if seg is None:
             return image_out, None
 
-        seg_out[:, :, :, :] = np.pad(
+        seg_out[:, :, :] = np.pad(
             seg[
                 :,
                 crop_start_idx[0] : crop_start_idx[0] + self.patch_size[0],
@@ -305,7 +305,7 @@ class CropPad(YuccaTransform):
     ):
         data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
 
-        target_image_shape, target_seg_shape = self.get_params(
+        target_image_shape, target_seg_shape, self.input_shape = self.get_params(
             data_dict[self.data_key].shape, self.patch_size
         )
 
