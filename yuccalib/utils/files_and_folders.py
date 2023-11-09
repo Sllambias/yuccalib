@@ -11,6 +11,9 @@ from batchgenerators.utilities.file_and_folder_operations import (
 from yuccalib.utils.softmax import softmax
 from yuccalib.utils.nib_utils import reorient_nib_image
 import os
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def recursive_find_python_class(folder: list, class_name: str, current_module: str):
@@ -135,5 +138,5 @@ class WriteSegFromLogits(BasePredictionWriter):
             data_dict["case_id"],
         )
         save_segmentation_from_logits(
-            logits, join(self.output_dir, f"{case_id}.nii.gz"), properties=properties
+            logits, join(self.output_dir, case_id), properties=properties
         )
