@@ -12,8 +12,15 @@ from yuccalib.utils.softmax import softmax
 from yuccalib.utils.nib_utils import reorient_nib_image
 import os
 import warnings
+import yaml
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+
+def load_yaml(file: str):
+    with open(file, "r") as f:
+        a = yaml.load(f, Loader=yaml.BaseLoader)
+    return a
 
 
 def recursive_find_python_class(folder: list, class_name: str, current_module: str):
