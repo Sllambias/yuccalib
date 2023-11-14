@@ -12,7 +12,9 @@ import os
 
 
 class TXTLogger(Logger):
-    def __init__(self, save_dir, name, steps_per_epoch):
+    def __init__(
+        self, save_dir: str = "./", name: str = None, steps_per_epoch: int = None
+    ):
         super().__init__()
         self._name = name
         self._save_dir = save_dir

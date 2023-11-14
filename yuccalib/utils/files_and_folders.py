@@ -2,17 +2,21 @@ import pkgutil
 import importlib
 import numpy as np
 import nibabel as nib
+import fileinput
+import re
+import shutil
+import os
+import warnings
+import yaml
 from lightning.pytorch.callbacks import BasePredictionWriter
 from batchgenerators.utilities.file_and_folder_operations import (
     join,
     subfiles,
+    subdirs,
     maybe_mkdir_p,
 )
 from yuccalib.utils.softmax import softmax
 from yuccalib.utils.nib_utils import reorient_nib_image
-import os
-import warnings
-import yaml
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -21,6 +25,68 @@ def load_yaml(file: str):
     with open(file, "r") as f:
         a = yaml.load(f, Loader=yaml.BaseLoader)
     return a
+
+
+def replace_in_file(file_path, pattern_replacement):
+    with fileinput.input(file_path, inplace=True) as file:
+        for line in file:
+            for pattern, replacement in pattern_replacement.items():
+                line = line.replace(pattern, replacement)
+            print(line, end="")
+
+
+def rename_file_or_dir(file: str, patterns: dict):
+    # Patterns is a dict of key, value pairs where keys are the words to replace and values are
+    # what to substitute them by. E.g. if patterns = {"foo": "bar"}
+    # then the sentence "foo bar" --> "bar bar"
+    newfile = file
+    for k, v in patterns.items():
+        newfile = re.sub(k, v, newfile)
+    if os.path.isdir(file):
+        if newfile != file:
+            shutil.move(file, newfile)
+    elif os.path.isfile(file):
+        os.rename(file, newfile)
+
+
+def recursive_rename(folder, patterns_in_file, patterns_in_name):
+    """
+    Takes a top folder and recursively looks through all subfolders and files.
+    For all file contents it will replace patterns_in_file keys with the corresponding values.
+    For all file names it will replace the patterns_in_name keys with the corresponding values.
+
+    If patterns_in_file = {"llama": "alpaca", "coffee": "TEA"}
+    and patterns_in_name = {"foo": "bar", "Foo": "Bar"}
+    and we take the file:
+
+    MyPythonFooScript.py
+    ---- (with the following lines of code) ----
+    llama = 42
+    coffee = 123
+
+    something_else = llama + coffee
+    ----
+
+    then we will end up with
+
+    MyPythonBarScript.py
+    ----
+    alpaca = 42
+    TEA = 123
+
+    something_else = alpaca + TEA
+    """
+    dirs = subdirs(folder)
+    files = subfiles(folder)
+    for file in files:
+        replace_in_file(
+            file,
+            patterns_in_file,
+        )
+        rename_file_or_dir(file, patterns_in_name)
+    for direc in dirs:
+        rename_file_or_dir(direc, patterns_in_name)
+        recursive_rename(direc)
 
 
 def recursive_find_python_class(folder: list, class_name: str, current_module: str):
