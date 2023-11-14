@@ -27,9 +27,8 @@ dependencies = [
     'timm>=0.9.8',
 ]
 
-[tool.setuptools.packages.find]
-where = ["yuccalib"]
-include = ["yuccalib","yuccalib.*"] 
+[tool.setuptools]
+packages = ["yuccalib"]
 
 [project.optional-dependencies]
 test = [
