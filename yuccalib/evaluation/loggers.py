@@ -1,5 +1,19 @@
+import sys
+import os
+from argparse import Namespace
 from lightning.pytorch.loggers.logger import Logger
-from lightning.pytorch.utilities import rank_zero_only
+from pytorch_lightning.utilities.rank_zero import rank_zero_only
+from pytorch_lightning.core.saving import save_hparams_to_yaml
+from pytorch_lightning.loggers.csv_logs import ExperimentWriter
+
+from lightning_fabric.loggers.logger import rank_zero_experiment
+
+from lightning_fabric.loggers.csv_logs import (
+    _ExperimentWriter as _FabricExperimentWriter,
+)
+from lightning_fabric.utilities.cloud_io import _is_dir, get_filesystem
+
+from lightning_fabric.utilities.logger import _convert_params
 from time import localtime, strftime, time
 from batchgenerators.utilities.file_and_folder_operations import (
     join,
@@ -7,21 +21,31 @@ from batchgenerators.utilities.file_and_folder_operations import (
     isdir,
     subdirs,
 )
-import sys
-import os
+from typing import Any, Dict, List, Optional, Set, Union
 
 
-class TXTLogger(Logger):
+class YuccaLogger(Logger):
     def __init__(
-        self, save_dir: str = "./", name: str = None, steps_per_epoch: int = None
+        self,
+        disable_logging: bool = False,
+        save_dir: str = "./",
+        name: str = "",
+        steps_per_epoch: int = None,
+        version: Optional[Union[int, str]] = None,
     ):
         super().__init__()
-        self._name = name
-        self._save_dir = save_dir
+        self._name = name or ""
+        self._root_dir = save_dir
+        self._version = version
+        self.disable_logging = disable_logging
         self.steps_per_epoch = steps_per_epoch
-        self.create_logfile()
-        self.previous_epoch = 0
+
+        # Default params
         self.epoch_start_time = time()
+        self.log_file = None
+        self.previous_epoch = 0
+        self.hparams: Dict[str, Any] = {}
+        self.NAME_HPARAMS_FILE = "hparams.yaml"
 
     @property
     def name(self):
@@ -29,20 +53,33 @@ class TXTLogger(Logger):
 
     @property
     def version(self):
-        return "0.1"
+        return self._version
 
     @property
-    def save_dir(self):
-        return self._save_dir
+    def root_dir(self):
+        return self._root_dir
+
+    @property
+    def log_dir(self):
+        log_dir = self.root_dir
+        if self.name is not None:
+            log_dir = join(log_dir, self.name)
+        if self.version is not None:
+            version = (
+                self.version
+                if isinstance(self.version, str)
+                else f"version_{self.version}"
+            )
+            log_dir = join(log_dir, version)
+        if not isdir(log_dir):
+            maybe_mkdir_p(log_dir)
+        return log_dir
 
     @rank_zero_only
     def create_logfile(self):
-        if not self.name:
-            self.name = localtime()
-        maybe_mkdir_p(join(self.save_dir, self.name))
+        maybe_mkdir_p(self.log_dir)
         self.log_file = join(
-            self.save_dir,
-            self.name,
+            self.log_dir,
             "training_log.txt",
         )
         with open(self.log_file, "w") as f:
@@ -53,13 +90,16 @@ class TXTLogger(Logger):
             f.write("\n")
 
     @rank_zero_only
-    def log_hyperparams(self, params):
-        # params is an argparse.Namespace
-        # your code to record hyperparameters goes here
-        pass
+    def log_hyperparams(self, params: Union[Dict[str, Any], Namespace]) -> None:  # type: ignore[override]
+        params = _convert_params(params)
+        self.log_hparams(params)
 
     @rank_zero_only
     def log_metrics(self, metrics, step):
+        if self.disable_logging:
+            pass
+        if self.log_file is None:
+            self.create_logfile()
         # metrics is a dictionary of metric names and values
         # your code to record metrics goes here
         t = strftime("%Y_%m_%d_%H_%M_%S", localtime())
@@ -85,13 +125,18 @@ class TXTLogger(Logger):
                 print(f"{t} {key+':':20} {metrics[key]}")
         sys.stdout.flush()
 
-    @rank_zero_only
-    def save(self):
-        # Optional. Any code necessary to save logger data goes here
-        pass
+    def log_hparams(self, params: Dict[str, Any]) -> None:
+        """Record hparams."""
+        self.hparams.update(params)
 
     @rank_zero_only
-    def finalize(self, status):
-        # Optional. Any code that needs to be run after training
-        # finishes goes here
-        pass
+    def save(self) -> None:
+        """Save recorded hparams into yaml."""
+        hparams_file = os.path.join(self.log_dir, self.NAME_HPARAMS_FILE)
+        save_hparams_to_yaml(hparams_file, self.hparams)
+
+    @rank_zero_only
+    def finalize(self, status: str) -> None:
+        # When using multiprocessing, finalize() should be a no-op on the main process, as no experiment has been
+        # initialized there
+        self.save()
