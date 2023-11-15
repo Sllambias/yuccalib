@@ -54,11 +54,13 @@ class NumpyToTorch(YuccaTransform):
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
         data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
+        data_len = len(data_dict[self.data_key].shape)
         assert (
-            len(data_dict[self.data_key].shape) == 5
-            or len(data_dict[self.data_key].shape) == 4
+            data_len == 5  # (B, C, H, W, D)
+            or data_len == 4  # (C, H, W, D) or (B, C, H, W)
+            or data_len == 3  # (C, H, W)
         ), f"Incorrect data size or shape.\
-            \nShould be (b, c, x, y, z) or (b, c, x, y) and is: {data_dict[self.data_key].shape}"
+            \nShould be (B, C, X, Y, Z) or (B, C, X, Y) or (C, X, Y, Z) or (C, X, Y) and is: {data_len}"
         self.get_params()
         data_dict[self.data_key], data_dict[self.seg_key] = self.__convert__(
             data_dict[self.data_key], data_dict[self.seg_key]
