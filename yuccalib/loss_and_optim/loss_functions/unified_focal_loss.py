@@ -16,8 +16,9 @@ import torch
 import torch.nn as nn
 
 
-# Helper function to enable loss function to be flexibly used for 
+# Helper function to enable loss function to be flexibly used for
 # both 2D or 3D image segmentation - source: https://github.com/frankkramer-lab/MIScnn
+
 
 def identify_axis(shape):
     # Three dimensional
@@ -25,12 +26,12 @@ def identify_axis(shape):
         return [2, 3, 4]
 
     # Two dimensional
-    elif len(shape) == 4: 
+    elif len(shape) == 4:
         return [2, 3]
 
     # Exception - Unknown
     else:
-        raise ValueError('Metric: Shape of tensor is neither 2D or 3D.')
+        raise ValueError("Metric: Shape of tensor is neither 2D or 3D.")
 
 
 class SymmetricFocalLoss(nn.Module):
@@ -44,22 +45,26 @@ class SymmetricFocalLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
-    def __init__(self, delta=0.7, gamma=2., epsilon=1e-07):
+
+    def __init__(self, delta=0.7, gamma=2.0, epsilon=1e-07):
         super(SymmetricFocalLoss, self).__init__()
         self.delta = delta
         self.gamma = gamma
         self.epsilon = epsilon
 
     def forward(self, y_pred, y_true):
-
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
+        y_pred = torch.clamp(y_pred, self.epsilon, 1.0 - self.epsilon)
         cross_entropy = -y_true * torch.log(y_pred)
 
         # Calculate losses separately for each class
-        back_ce = torch.pow(1 - y_pred[:,0,:,:], self.gamma) * cross_entropy[:,0,:,:]
-        back_ce =  (1 - self.delta) * back_ce
+        back_ce = (
+            torch.pow(1 - y_pred[:, 0, :, :], self.gamma) * cross_entropy[:, 0, :, :]
+        )
+        back_ce = (1 - self.delta) * back_ce
 
-        fore_ce = torch.pow(1 - y_pred[:,1,:,:], self.gamma) * cross_entropy[:,1,:,:]
+        fore_ce = (
+            torch.pow(1 - y_pred[:, 1, :, :], self.gamma) * cross_entropy[:, 1, :, :]
+        )
         fore_ce = self.delta * fore_ce
 
         loss = torch.mean(torch.sum(torch.stack([back_ce, fore_ce], axis=-1), axis=-1))
@@ -78,21 +83,24 @@ class AsymmetricFocalLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
-    def __init__(self, delta=0.7, gamma=2., epsilon=1e-07):
+
+    def __init__(self, delta=0.7, gamma=2.0, epsilon=1e-07):
         super(AsymmetricFocalLoss, self).__init__()
         self.delta = delta
         self.gamma = gamma
         self.epsilon = epsilon
 
     def forward(self, y_pred, y_true):
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
+        y_pred = torch.clamp(y_pred, self.epsilon, 1.0 - self.epsilon)
         cross_entropy = -y_true * torch.log(y_pred)
-        
-	# Calculate losses separately for each class, only suppressing background class
-        back_ce = torch.pow(1 - y_pred[:,0,:,:], self.gamma) * cross_entropy[:,0,:,:]
-        back_ce =  (1 - self.delta) * back_ce
 
-        fore_ce = cross_entropy[:,1,:,:]
+        # Calculate losses separately for each class, only suppressing background class
+        back_ce = (
+            torch.pow(1 - y_pred[:, 0, :, :], self.gamma) * cross_entropy[:, 0, :, :]
+        )
+        back_ce = (1 - self.delta) * back_ce
+
+        fore_ce = cross_entropy[:, 1, :, :]
         fore_ce = self.delta * fore_ce
 
         loss = torch.mean(torch.sum(torch.stack([back_ce, fore_ce], axis=-1), axis=-1))
@@ -113,6 +121,7 @@ class SymmetricFocalTverskyLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
+
     def __init__(self, delta=0.7, gamma=0.75, epsilon=1e-07):
         super(SymmetricFocalTverskyLoss, self).__init__()
         self.delta = delta
@@ -120,21 +129,27 @@ class SymmetricFocalTverskyLoss(nn.Module):
         self.epsilon = epsilon
 
     def forward(self, y_pred, y_true):
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
+        y_pred = torch.clamp(y_pred, self.epsilon, 1.0 - self.epsilon)
         axis = identify_axis(y_true.size())
 
-        # Calculate true positives (tp), false negatives (fn) and false positives (fp)     
+        # Calculate true positives (tp), false negatives (fn) and false positives (fp)
         tp = torch.sum(y_true * y_pred, axis=axis)
-        fn = torch.sum(y_true * (1-y_pred), axis=axis)
-        fp = torch.sum((1-y_true) * y_pred, axis=axis)
-        dice_class = (tp + self.epsilon)/(tp + self.delta*fn + (1-self.delta)*fp + self.epsilon)
+        fn = torch.sum(y_true * (1 - y_pred), axis=axis)
+        fp = torch.sum((1 - y_true) * y_pred, axis=axis)
+        dice_class = (tp + self.epsilon) / (
+            tp + self.delta * fn + (1 - self.delta) * fp + self.epsilon
+        )
 
         # Calculate losses separately for each class, enhancing both classes
-        back_dice = (1-dice_class[:,0]) * torch.pow(1-dice_class[:,0], -self.gamma)
-        fore_dice = (1-dice_class[:,1]) * torch.pow(1-dice_class[:,1], -self.gamma) 
+        back_dice = (1 - dice_class[:, 0]) * torch.pow(
+            1 - dice_class[:, 0], -self.gamma
+        )
+        fore_dice = (1 - dice_class[:, 1]) * torch.pow(
+            1 - dice_class[:, 1], -self.gamma
+        )
 
         # Average class scores
-        loss = torch.mean(torch.stack([back_dice,fore_dice], axis=-1))
+        loss = torch.mean(torch.stack([back_dice, fore_dice], axis=-1))
         return loss
 
 
@@ -151,6 +166,7 @@ class AsymmetricFocalTverskyLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
+
     def __init__(self, delta=0.7, gamma=0.75, epsilon=1e-07):
         super(AsymmetricFocalTverskyLoss, self).__init__()
         self.delta = delta
@@ -159,22 +175,26 @@ class AsymmetricFocalTverskyLoss(nn.Module):
 
     def forward(self, y_pred, y_true):
         # Clip values to prevent division by zero error
-        y_pred = torch.clamp(y_pred, self.epsilon, 1. - self.epsilon)
+        y_pred = torch.clamp(y_pred, self.epsilon, 1.0 - self.epsilon)
         axis = identify_axis(y_true.size())
 
-        # Calculate true positives (tp), false negatives (fn) and false positives (fp)     
+        # Calculate true positives (tp), false negatives (fn) and false positives (fp)
         print(y_true.shape, y_pred.shape)
         tp = torch.sum(y_true * y_pred, axis=axis)
-        fn = torch.sum(y_true * (1-y_pred), axis=axis)
-        fp = torch.sum((1-y_true) * y_pred, axis=axis)
-        dice_class = (tp + self.epsilon)/(tp + self.delta*fn + (1-self.delta)*fp + self.epsilon)
+        fn = torch.sum(y_true * (1 - y_pred), axis=axis)
+        fp = torch.sum((1 - y_true) * y_pred, axis=axis)
+        dice_class = (tp + self.epsilon) / (
+            tp + self.delta * fn + (1 - self.delta) * fp + self.epsilon
+        )
 
         # Calculate losses separately for each class, only enhancing foreground class
-        back_dice = (1-dice_class[:,0]) 
-        fore_dice = (1-dice_class[:,1]) * torch.pow(1-dice_class[:,1], -self.gamma) 
+        back_dice = 1 - dice_class[:, 0]
+        fore_dice = (1 - dice_class[:, 1]) * torch.pow(
+            1 - dice_class[:, 1], -self.gamma
+        )
 
         # Average class scores
-        loss = torch.mean(torch.stack([back_dice,fore_dice], axis=-1))
+        loss = torch.mean(torch.stack([back_dice, fore_dice], axis=-1))
         return loss
 
 
@@ -191,6 +211,7 @@ class SymmetricUnifiedFocalLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
+
     def __init__(self, weight=0.5, delta=0.6, gamma=0.5):
         super(SymmetricUnifiedFocalLoss, self).__init__()
         self.weight = weight
@@ -198,12 +219,16 @@ class SymmetricUnifiedFocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, y_pred, y_true):
-      symmetric_ftl = SymmetricFocalTverskyLoss(delta=self.delta, gamma=self.gamma)(y_pred, y_true)
-      symmetric_fl = SymmetricFocalLoss(delta=self.delta, gamma=self.gamma)(y_pred, y_true)
-      if self.weight is not None:
-        return (self.weight * symmetric_ftl) + ((1-self.weight) * symmetric_fl)  
-      else:
-        return symmetric_ftl + symmetric_fl
+        symmetric_ftl = SymmetricFocalTverskyLoss(delta=self.delta, gamma=self.gamma)(
+            y_pred, y_true
+        )
+        symmetric_fl = SymmetricFocalLoss(delta=self.delta, gamma=self.gamma)(
+            y_pred, y_true
+        )
+        if self.weight is not None:
+            return (self.weight * symmetric_ftl) + ((1 - self.weight) * symmetric_fl)
+        else:
+            return symmetric_ftl + symmetric_fl
 
 
 class AsymmetricUnifiedFocalLoss(nn.Module):
@@ -219,6 +244,7 @@ class AsymmetricUnifiedFocalLoss(nn.Module):
     epsilon : float, optional
         clip values to prevent division by zero error
     """
+
     def __init__(self, weight=0.5, delta=0.6, gamma=0.2):
         super(AsymmetricUnifiedFocalLoss, self).__init__()
         self.weight = weight
@@ -226,14 +252,18 @@ class AsymmetricUnifiedFocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, y_pred, y_true):
-      # Obtain Asymmetric Focal Tversky loss
-      asymmetric_ftl = AsymmetricFocalTverskyLoss(delta=self.delta, gamma=self.gamma)(y_pred, y_true)
+        # Obtain Asymmetric Focal Tversky loss
+        asymmetric_ftl = AsymmetricFocalTverskyLoss(delta=self.delta, gamma=self.gamma)(
+            y_pred, y_true
+        )
 
-      # Obtain Asymmetric Focal loss
-      asymmetric_fl = AsymmetricFocalLoss(delta=self.delta, gamma=self.gamma)(y_pred, y_true)
+        # Obtain Asymmetric Focal loss
+        asymmetric_fl = AsymmetricFocalLoss(delta=self.delta, gamma=self.gamma)(
+            y_pred, y_true
+        )
 
-      # Return weighted sum of Asymmetrical Focal loss and Asymmetric Focal Tversky loss
-      if self.weight is not None:
-        return (self.weight * asymmetric_ftl) + ((1-self.weight) * asymmetric_fl)  
-      else:
-        return asymmetric_ftl + asymmetric_fl
+        # Return weighted sum of Asymmetrical Focal loss and Asymmetric Focal Tversky loss
+        if self.weight is not None:
+            return (self.weight * asymmetric_ftl) + ((1 - self.weight) * asymmetric_fl)
+        else:
+            return asymmetric_ftl + asymmetric_fl

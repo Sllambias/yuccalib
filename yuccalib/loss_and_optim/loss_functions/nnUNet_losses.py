@@ -65,16 +65,24 @@ def get_tp_fp_fn_tn(net_output, gt, axes=None, mask=None, square=False):
     tn = (1 - net_output) * (1 - y_onehot)
 
     if mask is not None:
-        tp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tp, dim=1)), dim=1)
-        fp = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fp, dim=1)), dim=1)
-        fn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(fn, dim=1)), dim=1)
-        tn = torch.stack(tuple(x_i * mask[:, 0] for x_i in torch.unbind(tn, dim=1)), dim=1)
+        tp = torch.stack(
+            tuple(x_i * mask[:, 0] for x_i in torch.unbind(tp, dim=1)), dim=1
+        )
+        fp = torch.stack(
+            tuple(x_i * mask[:, 0] for x_i in torch.unbind(fp, dim=1)), dim=1
+        )
+        fn = torch.stack(
+            tuple(x_i * mask[:, 0] for x_i in torch.unbind(fn, dim=1)), dim=1
+        )
+        tn = torch.stack(
+            tuple(x_i * mask[:, 0] for x_i in torch.unbind(tn, dim=1)), dim=1
+        )
 
     if square:
-        tp = tp ** 2
-        fp = fp ** 2
-        fn = fn ** 2
-        tn = tn ** 2
+        tp = tp**2
+        fp = fp**2
+        fn = fn**2
+        tn = tn**2
 
     if len(axes) > 0:
         tp = sum_tensor(tp, axes, keepdim=False)
@@ -86,15 +94,14 @@ def get_tp_fp_fn_tn(net_output, gt, axes=None, mask=None, square=False):
 
 
 class SoftDiceLoss(nn.Module):
-    def __init__(self, apply_softmax=True, batch_dice=False, do_bg=True, smooth=1.):
-        """
-        """
+    def __init__(self, apply_softmax=True, batch_dice=False, do_bg=True, smooth=1.0):
+        """ """
         super(SoftDiceLoss, self).__init__()
 
         self.do_bg = do_bg
         self.batch_dice = batch_dice
         self.smooth = smooth
-        self.apply_softmax = apply_softmax 
+        self.apply_softmax = apply_softmax
 
     def forward(self, x, y, loss_mask=None):
         shp_x = x.shape
@@ -125,8 +132,15 @@ class SoftDiceLoss(nn.Module):
 
 
 class DiceCE(nn.Module):
-    def __init__(self, soft_dice_kwargs={}, ce_kwargs={}, weight_ce=1, weight_dice=1,
-                 log_dice=False, ignore_label=None):
+    def __init__(
+        self,
+        soft_dice_kwargs={},
+        ce_kwargs={},
+        weight_ce=1,
+        weight_dice=1,
+        log_dice=False,
+        ignore_label=None,
+    ):
         """
         CAREFUL. Weights for CE and Dice do not need to sum to one. You can set whatever you want.
         :param soft_dice_kwargs:
@@ -138,7 +152,7 @@ class DiceCE(nn.Module):
         """
         super(DiceCE, self).__init__()
         if ignore_label is not None:
-            ce_kwargs['reduction'] = 'none'
+            ce_kwargs["reduction"] = "none"
         self.log_dice = log_dice
         self.weight_dice = weight_dice
         self.weight_ce = weight_ce
@@ -156,14 +170,16 @@ class DiceCE(nn.Module):
         :return:
         """
         if self.ignore_label is not None:
-            assert target.shape[1] == 1, 'not implemented for one hot encoding'
+            assert target.shape[1] == 1, "not implemented for one hot encoding"
             mask = target != self.ignore_label
             target[~mask] = 0
             mask = mask.float()
         else:
             mask = None
 
-        dc_loss = self.dc(net_output, target, loss_mask=mask) if self.weight_dice != 0 else 0
+        dc_loss = (
+            self.dc(net_output, target, loss_mask=mask) if self.weight_dice != 0 else 0
+        )
         if self.log_dice:
             dc_loss = -torch.log(-dc_loss)
 

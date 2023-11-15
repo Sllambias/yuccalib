@@ -6,27 +6,27 @@ from torch import Tensor
 
 
 class ResNet50(YuccaNet):
-    """
-    
-    """
+    """ """
+
     def __init__(
-                 self,
-                 input_channels: int,
-                 patch_size=None,
-                 conv_op=nn.Conv2d,
-                 dropout_op=nn.Dropout2d,
-                 norm_op=nn.InstanceNorm2d,
-                 starting_filters: int = 64,
-                 block=Bottleneck,
-                 layers=[3, 4, 6, 3],
-                 num_cls_classes: int = 1000,
-                 num_seg_classes: int = 1000,
-                 zero_init_residual: bool = False,
-                 groups: int = 1,
-                 width_per_group: int = 64,
-                 replace_stride_with_dilation=[False, False, True],
-                 norm_layer=nn.BatchNorm2d,
-                 deep_supervision=False) -> None:
+        self,
+        input_channels: int,
+        patch_size=None,
+        conv_op=nn.Conv2d,
+        dropout_op=nn.Dropout2d,
+        norm_op=nn.InstanceNorm2d,
+        starting_filters: int = 64,
+        block=Bottleneck,
+        layers=[3, 4, 6, 3],
+        num_cls_classes: int = 1000,
+        num_seg_classes: int = 1000,
+        zero_init_residual: bool = False,
+        groups: int = 1,
+        width_per_group: int = 64,
+        replace_stride_with_dilation=[False, False, True],
+        norm_layer=nn.BatchNorm2d,
+        deep_supervision=False,
+    ) -> None:
         super().__init__()
         self._norm_layer = norm_layer
         self.groups = groups
@@ -35,25 +35,40 @@ class ResNet50(YuccaNet):
         self.inplanes = starting_filters
         self.dilation = 1
 
-        self.conv1 = nn.Conv2d(input_channels, self.inplanes, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(
+            input_channels,
+            self.inplanes,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias=False,
+        )
         self.bn1 = norm_layer(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0])
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1])
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2])
+        self.layer2 = self._make_layer(
+            block, 128, layers[1], stride=2, dilate=replace_stride_with_dilation[0]
+        )
+        self.layer3 = self._make_layer(
+            block, 256, layers[2], stride=2, dilate=replace_stride_with_dilation[1]
+        )
+        self.layer4 = self._make_layer(
+            block, 512, layers[3], stride=2, dilate=replace_stride_with_dilation[2]
+        )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         self.fc = nn.Linear(512 * block.expansion, num_cls_classes)
 
-        self.upsample_re1 = nn.ConvTranspose2d(512*block.expansion, out_channels=input_channels,
-                                               stride=2, kernel_size=2)
-        self.upsample_re2 = nn.Upsample(scale_factor=8, mode='bilinear')
+        self.upsample_re1 = nn.ConvTranspose2d(
+            512 * block.expansion, out_channels=input_channels, stride=2, kernel_size=2
+        )
+        self.upsample_re2 = nn.Upsample(scale_factor=8, mode="bilinear")
 
-        self.upsample_seg1 = nn.ConvTranspose2d(512*block.expansion, out_channels=num_seg_classes,
-                                                stride=2, kernel_size=2)
-        self.upsample_seg2 = nn.Upsample(scale_factor=8, mode='bilinear')
+        self.upsample_seg1 = nn.ConvTranspose2d(
+            512 * block.expansion, out_channels=num_seg_classes, stride=2, kernel_size=2
+        )
+        self.upsample_seg2 = nn.Upsample(scale_factor=8, mode="bilinear")
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -86,16 +101,27 @@ class ResNet50(YuccaNet):
             stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, stride=stride,
-                          bias=False),
+                nn.Conv2d(
+                    self.inplanes,
+                    planes * block.expansion,
+                    kernel_size=1,
+                    stride=stride,
+                    bias=False,
+                ),
                 norm_layer(planes * block.expansion),
             )
 
         layers = []
         layers.append(
             block(
-                self.inplanes, planes, stride, downsample, self.groups, self.base_width, 
-                previous_dilation, norm_layer
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                self.groups,
+                self.base_width,
+                previous_dilation,
+                norm_layer,
             )
         )
         self.inplanes = planes * block.expansion
@@ -120,22 +146,22 @@ class ResNet50(YuccaNet):
         x = self.relu(x)
         x = self.maxpool(x)
 
-        low_level_features = self.layer1(x) # Potential Skip Connection 1 Here 
+        low_level_features = self.layer1(x)  # Potential Skip Connection 1 Here
         # Outputs of layer1 are also known as "low_level" features for DeepLabV3+
 
-        x = self.layer2(low_level_features) # Potential Skip Connection 2 Here
-        x = self.layer3(x) # Potential Skip Connection 3 Here
-        high_level_features = self.layer4(x) # Potential Skip Connection 4 Here
+        x = self.layer2(low_level_features)  # Potential Skip Connection 2 Here
+        x = self.layer3(x)  # Potential Skip Connection 3 Here
+        high_level_features = self.layer4(x)  # Potential Skip Connection 4 Here
         # Outputs of layer1 are also known as "out" features for DeepLabV3+
 
-        if task == 'Classification':
+        if task == "Classification":
             x = self.avgpool(high_level_features)
             x = torch.flatten(x, 1)
             x = self.fc(x)
-        if task == 'Segmentation':
+        if task == "Segmentation":
             x = self.upsample_seg1(high_level_features)
             x = self.upsample_seg2(x)
-        if task == 'Reconstruction':
+        if task == "Reconstruction":
             x = self.upsample_re1(high_level_features)
             x = self.upsample_re2(x)
         return x

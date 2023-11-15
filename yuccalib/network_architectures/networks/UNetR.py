@@ -14,22 +14,29 @@ from yuccalib.network_architectures.networks.YuccaNet import YuccaNet
 
 
 class UNetR(YuccaNet):
-    def __init__(self,
-                 input_channels: int,
-                 num_classes: int = 1,
-                 patch_size: Tuple = None,
-                 starting_filters: int = 16, 
-                 conv_op=nn.Conv2d,
-                 conv_kwargs={'kernel_size': 3, 'stride': 1, 'padding': 1, 'dilation': 1, 'bias': True},
-                 norm_op=nn.InstanceNorm2d,
-                 norm_op_kwargs={'eps': 1e-5, 'affine': True, 'momentum': 0.1},
-                 dropout_op=nn.Dropout2d,
-                 dropout_op_kwargs={'p': 0.0, 'inplace': True},
-                 nonlin=nn.LeakyReLU,
-                 nonlin_kwargs={'negative_slope': 1e-2, 'inplace': True},
-                 weightInitializer=None,
-                 basic_block=None,
-                 ) -> None:
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int = 1,
+        patch_size: Tuple = None,
+        starting_filters: int = 16,
+        conv_op=nn.Conv2d,
+        conv_kwargs={
+            "kernel_size": 3,
+            "stride": 1,
+            "padding": 1,
+            "dilation": 1,
+            "bias": True,
+        },
+        norm_op=nn.InstanceNorm2d,
+        norm_op_kwargs={"eps": 1e-5, "affine": True, "momentum": 0.1},
+        dropout_op=nn.Dropout2d,
+        dropout_op_kwargs={"p": 0.0, "inplace": True},
+        nonlin=nn.LeakyReLU,
+        nonlin_kwargs={"negative_slope": 1e-2, "inplace": True},
+        weightInitializer=None,
+        basic_block=None,
+    ) -> None:
         """
         Args:
             in_channels: dimension of input channels.
@@ -64,14 +71,16 @@ class UNetR(YuccaNet):
         conv_block = False
         res_block = True
 
-        if not (0 <= dropout_op_kwargs['p'] <= 1):
+        if not (0 <= dropout_op_kwargs["p"] <= 1):
             raise AssertionError("dropout_rate should be between 0 and 1.")
 
         if hidden_size % num_heads != 0:
             raise AssertionError("hidden size should be divisible by num_heads.")
 
         if pos_embed not in ["conv", "perceptron"]:
-            raise KeyError(f"Position embedding layer of type {pos_embed} is not supported.")
+            raise KeyError(
+                f"Position embedding layer of type {pos_embed} is not supported."
+            )
 
         # Task specific
         self.num_classes = num_classes
@@ -86,7 +95,7 @@ class UNetR(YuccaNet):
         self.dropout_op_kwargs = dropout_op_kwargs
         self.nonlin_kwargs = nonlin_kwargs
         self.nonlin = nonlin
-        self.weightInitializer = weightInitializer 
+        self.weightInitializer = weightInitializer
         self.basic_block = basic_block
 
         self.num_layers = 12
@@ -94,14 +103,16 @@ class UNetR(YuccaNet):
             self.transformer_patch_size = (16, 16)
             self.feat_size = (
                 patch_size[0] // self.transformer_patch_size[0],
-                patch_size[1] // self.transformer_patch_size[1],)
+                patch_size[1] // self.transformer_patch_size[1],
+            )
             self.spatial_dims = 2
         else:
             self.transformer_patch_size = (16, 16, 16)
             self.feat_size = (
                 patch_size[0] // self.transformer_patch_size[0],
                 patch_size[1] // self.transformer_patch_size[1],
-                patch_size[2] // self.transformer_patch_size[2],)
+                patch_size[2] // self.transformer_patch_size[2],
+            )
             self.spatial_dims = 3
         self.hidden_size = hidden_size
         self.classification = False
@@ -116,7 +127,7 @@ class UNetR(YuccaNet):
             num_heads=num_heads,
             pos_embed=pos_embed,
             classification=self.classification,
-            dropout_rate=dropout_op_kwargs['p'],
+            dropout_rate=dropout_op_kwargs["p"],
             spatial_dims=self.spatial_dims,
         )
         self.encoder1 = UnetrBasicBlock(
@@ -201,11 +212,11 @@ class UNetR(YuccaNet):
             res_block=res_block,
         )
         self.out = UnetOutBlock(spatial_dims=self.spatial_dims, in_channels=self.filters, out_channels=self.num_classes)  # type: ignore
-        
+
         if self.weightInitializer is not None:
             print("initializing weights")
             self.apply(self.weightInitializer)
-            
+
     def proj_feat(self, x, hidden_size, feat_size):
         if len(feat_size) == 2:
             x = x.view(x.size(0), feat_size[0], feat_size[1], hidden_size)
@@ -222,16 +233,22 @@ class UNetR(YuccaNet):
             for i in weights["state_dict"]:
                 print(i)
             self.vit.patch_embedding.position_embeddings.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.position_embeddings_3d"]
+                weights["state_dict"][
+                    "module.transformer.patch_embedding.position_embeddings_3d"
+                ]
             )
             self.vit.patch_embedding.cls_token.copy_(
                 weights["state_dict"]["module.transformer.patch_embedding.cls_token"]
             )
             self.vit.patch_embedding.patch_embeddings[1].weight.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.patch_embeddings.1.weight"]
+                weights["state_dict"][
+                    "module.transformer.patch_embedding.patch_embeddings.1.weight"
+                ]
             )
             self.vit.patch_embedding.patch_embeddings[1].bias.copy_(
-                weights["state_dict"]["module.transformer.patch_embedding.patch_embeddings.1.bias"]
+                weights["state_dict"][
+                    "module.transformer.patch_embedding.patch_embeddings.1.bias"
+                ]
             )
 
             # copy weights from  encoding blocks (default: num of blocks: 12)
@@ -239,11 +256,13 @@ class UNetR(YuccaNet):
                 print(block)
                 block.loadFrom(weights, n_block=bname)
             # last norm layer of transformer
-            self.vit.norm.weight.copy_(weights["state_dict"]["module.transformer.norm.weight"])
-            self.vit.norm.bias.copy_(weights["state_dict"]["module.transformer.norm.bias"])
+            self.vit.norm.weight.copy_(
+                weights["state_dict"]["module.transformer.norm.weight"]
+            )
+            self.vit.norm.bias.copy_(
+                weights["state_dict"]["module.transformer.norm.bias"]
+            )
 
-            
-            
     def forward(self, x_in):
         x, hidden_states_out = self.vit(x_in)
         enc1 = self.encoder1(x_in)

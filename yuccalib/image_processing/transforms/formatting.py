@@ -80,7 +80,7 @@ class AddBatchDimension(YuccaTransform):
     def __unsqueeze__(self, data, seg):
         data = data[np.newaxis]
         if isinstance(seg, list):
-            seg = [s[np.newaxis] for i in seg]
+            seg = [s[np.newaxis] for s in seg]
         else:
             seg = seg[np.newaxis]
         return data, seg
@@ -105,7 +105,7 @@ class RemoveBatchDimension(YuccaTransform):
     def __squeeze__(self, data, seg):
         data = data[0]
         if isinstance(seg, list):
-            seg = [s[0] for i in seg]
+            seg = [s[0] for s in seg]
         else:
             seg = seg[0]
         return data, seg

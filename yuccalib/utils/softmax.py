@@ -1,5 +1,7 @@
 import numpy as np
+
 np.seterr(all="ignore")
+
 
 def softmax(x, axis=1):
     """Compute softmax values for each sets of scores in x."""

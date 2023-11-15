@@ -3,7 +3,9 @@ import warnings
 import cc3d
 from yuccalib.utils.nib_utils import get_nib_spacing
 from yuccalib.evaluation.metrics import sensitivity, precision, specificity, f1
+
 warnings.filterwarnings("error")
+
 
 def get_obj_stats_for_label(gt, pred, label, as_binary=False):
     spacing = get_nib_spacing(gt)
@@ -14,33 +16,43 @@ def get_obj_stats_for_label(gt, pred, label, as_binary=False):
         pred = pred.astype(bool).astype(int)
     labeldict = {}
     if label == 0:
-        labeldict['_OBJ Total Objects Prediction'] = 0
-        labeldict['_OBJ Total Objects Ground Truth'] = 0
-        labeldict['_OBJ True Positives'] = 0
-        labeldict['_OBJ False Positives'] = 0
-        labeldict['_OBJ False Negatives'] = 0
-        labeldict['_OBJ Mean Volume Prediction'] = 0
-        labeldict['_OBJ Mean Volume Ground Truth'] = 0
-        labeldict['_OBJ sensitivity'] = 0
-        labeldict['_OBJ precision'] = 0
-        labeldict['_OBJ F1'] = 0
+        labeldict["_OBJ Total Objects Prediction"] = 0
+        labeldict["_OBJ Total Objects Ground Truth"] = 0
+        labeldict["_OBJ True Positives"] = 0
+        labeldict["_OBJ False Positives"] = 0
+        labeldict["_OBJ False Negatives"] = 0
+        labeldict["_OBJ Mean Volume Prediction"] = 0
+        labeldict["_OBJ Mean Volume Ground Truth"] = 0
+        labeldict["_OBJ sensitivity"] = 0
+        labeldict["_OBJ precision"] = 0
+        labeldict["_OBJ F1"] = 0
     else:
         pred_for_label = np.where(pred == label, 1, 0).astype(bool)
         gt_for_label = np.where(gt == label, 1, 0).astype(bool)
-        cc_gt, cc_gt_n = cc3d.connected_components(gt_for_label, connectivity=26, return_N=True)
-        cc_pred, cc_pred_n = cc3d.connected_components(pred_for_label, connectivity=26, return_N=True)
-        tp, fp, fn, gtvols, predvols = obj_get_tp_fp_fn_gtvols_predvols(cc_gt, cc_pred, cc_gt_n, cc_pred_n)
+        cc_gt, cc_gt_n = cc3d.connected_components(
+            gt_for_label, connectivity=26, return_N=True
+        )
+        cc_pred, cc_pred_n = cc3d.connected_components(
+            pred_for_label, connectivity=26, return_N=True
+        )
+        tp, fp, fn, gtvols, predvols = obj_get_tp_fp_fn_gtvols_predvols(
+            cc_gt, cc_pred, cc_gt_n, cc_pred_n
+        )
 
-        labeldict['_OBJ Total Objects Prediction'] = cc_pred_n
-        labeldict['_OBJ Total Objects Ground Truth'] = cc_gt_n
-        labeldict['_OBJ True Positives'] = tp
-        labeldict['_OBJ False Positives'] = fp
-        labeldict['_OBJ False Negatives'] = fn
-        labeldict['_OBJ Mean Volume Prediction'] = float(np.prod(spacing) * np.mean(predvols))
-        labeldict['_OBJ Mean Volume Ground Truth'] = float(np.prod(spacing) * np.mean(gtvols))
-        labeldict['_OBJ sensitivity'] = sensitivity(tp, fp, 0, fn)
-        labeldict['_OBJ precision'] = precision(tp, fp, 0, fn)
-        labeldict['_OBJ F1'] = f1(tp, fp, 0, fn)
+        labeldict["_OBJ Total Objects Prediction"] = cc_pred_n
+        labeldict["_OBJ Total Objects Ground Truth"] = cc_gt_n
+        labeldict["_OBJ True Positives"] = tp
+        labeldict["_OBJ False Positives"] = fp
+        labeldict["_OBJ False Negatives"] = fn
+        labeldict["_OBJ Mean Volume Prediction"] = float(
+            np.prod(spacing) * np.mean(predvols)
+        )
+        labeldict["_OBJ Mean Volume Ground Truth"] = float(
+            np.prod(spacing) * np.mean(gtvols)
+        )
+        labeldict["_OBJ sensitivity"] = sensitivity(tp, fp, 0, fn)
+        labeldict["_OBJ precision"] = precision(tp, fp, 0, fn)
+        labeldict["_OBJ F1"] = f1(tp, fp, 0, fn)
     return labeldict
 
 
@@ -75,4 +87,3 @@ def n_cc_gt(cc_gt, cc_pred, n_cc_gt, n_cc_pred):
 
 def n_cc_pred(cc_gt, cc_pred, n_cc_gt, n_cc_pred):
     return n_cc_pred
-

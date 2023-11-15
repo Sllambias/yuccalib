@@ -7,7 +7,11 @@ def crop_to_box(array, bbox):
     Should be a list of [xmin, xmax, ymin, ymax (, zmin, zmax)]
     """
     if len(bbox) > 5:
-        bbox_slices = (slice(bbox[0], bbox[1]), slice(bbox[2], bbox[3]), slice(bbox[4], bbox[5]))
+        bbox_slices = (
+            slice(bbox[0], bbox[1]),
+            slice(bbox[2], bbox[3]),
+            slice(bbox[4], bbox[5]),
+        )
     else:
         bbox_slices = (slice(bbox[0], bbox[1]), slice(bbox[2], bbox[3]))
     return array[bbox_slices]
@@ -16,12 +20,21 @@ def crop_to_box(array, bbox):
 def pad_to_size(array, size):
     pad_box = get_pad_box(array, size)
     if len(pad_box) > 5:
-        array_padded = np.pad(array, ((pad_box[0], pad_box[1]), (pad_box[2], pad_box[3]),
-                                      (pad_box[4], pad_box[5])), mode='edge')
+        array_padded = np.pad(
+            array,
+            (
+                (pad_box[0], pad_box[1]),
+                (pad_box[2], pad_box[3]),
+                (pad_box[4], pad_box[5]),
+            ),
+            mode="edge",
+        )
         return array_padded, pad_box
 
-    array_padded = np.pad(array, ((pad_box[0], pad_box[1]), (pad_box[2], pad_box[3])), mode='edge')
-    return array_padded, pad_box  
+    array_padded = np.pad(
+        array, ((pad_box[0], pad_box[1]), (pad_box[2], pad_box[3])), mode="edge"
+    )
+    return array_padded, pad_box
 
 
 def get_pad_box(original_array, min_size):
@@ -34,14 +47,14 @@ def get_pad_box(original_array, min_size):
             # 3D Data for 2D model.
             min_size = (0, *min_size)
         for i in range(3):
-            val = (max(0, min_size[i] - original_array.shape[i]))
+            val = max(0, min_size[i] - original_array.shape[i])
             pad_box.append(val // 2)
             pad_box.append(val // 2 + val % 2)
         return pad_box
 
     # 2D data + 2D model
     for i in range(2):
-        val = (max(0, min_size[i] - original_array.shape[i]))
+        val = max(0, min_size[i] - original_array.shape[i])
         pad_box.append(val // 2)
         pad_box.append(val // 2 + val % 2)
     return pad_box

@@ -4,8 +4,13 @@ FROM: https://github.com/j-sripad/mulitresunet-pytorch/blob/main/multiresunet.py
 import torch
 import torch.nn as nn
 from yuccalib.network_architectures.networks.YuccaNet import YuccaNet
-from yuccalib.network_architectures.blocks_and_layers.conv_blocks import Multiresblock, Respath
-from yuccalib.network_architectures.blocks_and_layers.conv_layers import ConvDropoutNormNonlin
+from yuccalib.network_architectures.blocks_and_layers.conv_blocks import (
+    Multiresblock,
+    Respath,
+)
+from yuccalib.network_architectures.blocks_and_layers.conv_layers import (
+    ConvDropoutNormNonlin,
+)
 
 
 class MultiResUNet(YuccaNet):
@@ -17,22 +22,30 @@ class MultiResUNet(YuccaNet):
 
     Returns - None
     """
-    def __init__(self,
-                 input_channels: int,
-                 num_classes: int = 1,
-                 starting_filters: int = 32,
-                 conv_op=nn.Conv2d,
-                 conv_kwargs={'kernel_size': 3, 'stride': 1, 'padding': 1, 'dilation': 1, 'bias': True},
-                 norm_op=nn.InstanceNorm2d,
-                 norm_op_kwargs={'eps': 1e-5, 'affine': True, 'momentum': 0.1},
-                 dropout_op=nn.Dropout2d,
-                 dropout_op_kwargs={'p': 0.0, 'inplace': True},
-                 nonlin=nn.LeakyReLU,
-                 nonlin_kwargs={'negative_slope': 1e-2, 'inplace': True},
-                 dropout_in_decoder=False,
-                 weightInitializer=None,
-                 basic_block=ConvDropoutNormNonlin,
-                 ) -> None:
+
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int = 1,
+        starting_filters: int = 32,
+        conv_op=nn.Conv2d,
+        conv_kwargs={
+            "kernel_size": 3,
+            "stride": 1,
+            "padding": 1,
+            "dilation": 1,
+            "bias": True,
+        },
+        norm_op=nn.InstanceNorm2d,
+        norm_op_kwargs={"eps": 1e-5, "affine": True, "momentum": 0.1},
+        dropout_op=nn.Dropout2d,
+        dropout_op_kwargs={"p": 0.0, "inplace": True},
+        nonlin=nn.LeakyReLU,
+        nonlin_kwargs={"negative_slope": 1e-2, "inplace": True},
+        dropout_in_decoder=False,
+        weightInitializer=None,
+        basic_block=ConvDropoutNormNonlin,
+    ) -> None:
         super(MultiResUNet, self).__init__()
         # Architecture specific
         self.alpha = 1.67
@@ -62,164 +75,274 @@ class MultiResUNet(YuccaNet):
             self.upsample = torch.nn.ConvTranspose3d
 
         # Encoder Path
-        self.multiresblock1 = Multiresblock(input_channels, self.filters,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
-        
-        self.in_filters1 = int(self.filters * self.alpha * 0.167) \
-                           + int(self.filters * self.alpha * 0.333) \
-                           + int(self.filters * self.alpha * 0.5)
+        self.multiresblock1 = Multiresblock(
+            input_channels,
+            self.filters,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
+
+        self.in_filters1 = (
+            int(self.filters * self.alpha * 0.167)
+            + int(self.filters * self.alpha * 0.333)
+            + int(self.filters * self.alpha * 0.5)
+        )
         self.pool1 = self.pool_op(2)
-        self.respath1 = Respath(self.in_filters1, self.filters, 4,
-                                self.conv_op, self.conv_kwargs,
-                                self.norm_op, self.norm_op_kwargs,
-                                self.dropout_op, self.dropout_op_kwargs,
-                                self.nonlin, self.nonlin_kwargs,
-                                self.basic_block)
+        self.respath1 = Respath(
+            self.in_filters1,
+            self.filters,
+            4,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.multiresblock2 = Multiresblock(self.in_filters1, self.filters * 2,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock2 = Multiresblock(
+            self.in_filters1,
+            self.filters * 2,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters2 = int(self.filters * 2 * self.alpha * 0.167) \
-                        + int(self.filters * 2 * self.alpha * 0.333) \
-                        + int(self.filters * 2 * self.alpha * 0.5)
+        self.in_filters2 = (
+            int(self.filters * 2 * self.alpha * 0.167)
+            + int(self.filters * 2 * self.alpha * 0.333)
+            + int(self.filters * 2 * self.alpha * 0.5)
+        )
         self.pool2 = self.pool_op(2)
-        self.respath2 = Respath(self.in_filters2, self.filters * 2, 3,
-                                self.conv_op, self.conv_kwargs,
-                                self.norm_op, self.norm_op_kwargs,
-                                self.dropout_op, self.dropout_op_kwargs,
-                                self.nonlin, self.nonlin_kwargs,
-                                self.basic_block)
+        self.respath2 = Respath(
+            self.in_filters2,
+            self.filters * 2,
+            3,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.multiresblock3 = Multiresblock(self.in_filters2, self.filters * 4,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock3 = Multiresblock(
+            self.in_filters2,
+            self.filters * 4,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters3 = int(self.filters * 4 * self.alpha * 0.167) \
-                        + int(self.filters * 4 * self.alpha * 0.333) \
-                        + int(self.filters * 4 * self.alpha * 0.5)
+        self.in_filters3 = (
+            int(self.filters * 4 * self.alpha * 0.167)
+            + int(self.filters * 4 * self.alpha * 0.333)
+            + int(self.filters * 4 * self.alpha * 0.5)
+        )
         self.pool3 = self.pool_op(2)
-        self.respath3 = Respath(self.in_filters3, self.filters * 4, 2,
-                                self.conv_op, self.conv_kwargs,
-                                self.norm_op, self.norm_op_kwargs,
-                                self.dropout_op, self.dropout_op_kwargs,
-                                self.nonlin, self.nonlin_kwargs,
-                                self.basic_block)
+        self.respath3 = Respath(
+            self.in_filters3,
+            self.filters * 4,
+            2,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.multiresblock4 = Multiresblock(self.in_filters3, self.filters * 8,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock4 = Multiresblock(
+            self.in_filters3,
+            self.filters * 8,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters4 = int(self.filters * 8 * self.alpha * 0.167) \
-                        + int(self.filters * 8 * self.alpha * 0.333) \
-                        + int(self.filters * 8 * self.alpha * 0.5)
+        self.in_filters4 = (
+            int(self.filters * 8 * self.alpha * 0.167)
+            + int(self.filters * 8 * self.alpha * 0.333)
+            + int(self.filters * 8 * self.alpha * 0.5)
+        )
         self.pool4 = self.pool_op(2)
-        self.respath4 = Respath(self.in_filters4,self.filters * 8, 1,
-                                self.conv_op, self.conv_kwargs,
-                                self.norm_op, self.norm_op_kwargs,
-                                self.dropout_op, self.dropout_op_kwargs,
-                                self.nonlin, self.nonlin_kwargs,
-                                self.basic_block)
+        self.respath4 = Respath(
+            self.in_filters4,
+            self.filters * 8,
+            1,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.multiresblock5 = Multiresblock(self.in_filters4,self.filters * 16,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock5 = Multiresblock(
+            self.in_filters4,
+            self.filters * 16,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
         if not dropout_in_decoder:
-            old_dropout_p = self.dropout_op_kwargs['p']
-            self.dropout_op_kwargs['p'] = 0.0
+            old_dropout_p = self.dropout_op_kwargs["p"]
+            self.dropout_op_kwargs["p"] = 0.0
 
         # Decoder path
-        self.in_filters5 = int(self.filters * 16 * self.alpha * 0.167) \
-                        + int(self.filters * 16 * self.alpha * 0.333) \
-                        + int(self.filters * 16 * self.alpha * 0.5)
-        self.upsample6 = self.upsample(self.in_filters5, 
-                                                  self.filters * 8, 
-                                                  kernel_size=(2), 
-                                                  stride=(2))  
+        self.in_filters5 = (
+            int(self.filters * 16 * self.alpha * 0.167)
+            + int(self.filters * 16 * self.alpha * 0.333)
+            + int(self.filters * 16 * self.alpha * 0.5)
+        )
+        self.upsample6 = self.upsample(
+            self.in_filters5, self.filters * 8, kernel_size=(2), stride=(2)
+        )
 
-        self.multiresblock6 = Multiresblock(self.filters * 8 * 2, self.filters * 8,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock6 = Multiresblock(
+            self.filters * 8 * 2,
+            self.filters * 8,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters6 = int(self.filters * 8 * self.alpha * 0.167) \
-                        + int(self.filters * 8 * self.alpha * 0.333) \
-                        + int(self.filters * 8 * self.alpha * 0.5)
-        self.upsample7 = self.upsample(self.in_filters6, 
-                                                  self.filters * 4, 
-                                                  kernel_size=(2),
-                                                  stride=(2))  
+        self.in_filters6 = (
+            int(self.filters * 8 * self.alpha * 0.167)
+            + int(self.filters * 8 * self.alpha * 0.333)
+            + int(self.filters * 8 * self.alpha * 0.5)
+        )
+        self.upsample7 = self.upsample(
+            self.in_filters6, self.filters * 4, kernel_size=(2), stride=(2)
+        )
 
-        self.multiresblock7 = Multiresblock(self.filters * 4 * 2, self.filters * 4,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock7 = Multiresblock(
+            self.filters * 4 * 2,
+            self.filters * 4,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters7 = int(self.filters*4*self.alpha* 0.167) \
-                        + int(self.filters*4*self.alpha* 0.333) \
-                        + int(self.filters*4*self.alpha* 0.5)
-        self.upsample8 = self.upsample(self.in_filters7,
-                                                  self.filters * 2, 
-                                                  kernel_size=(2), 
-                                                  stride=(2))
+        self.in_filters7 = (
+            int(self.filters * 4 * self.alpha * 0.167)
+            + int(self.filters * 4 * self.alpha * 0.333)
+            + int(self.filters * 4 * self.alpha * 0.5)
+        )
+        self.upsample8 = self.upsample(
+            self.in_filters7, self.filters * 2, kernel_size=(2), stride=(2)
+        )
 
-        self.multiresblock8 = Multiresblock(self.filters * 2 * 2, self.filters * 2,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock8 = Multiresblock(
+            self.filters * 2 * 2,
+            self.filters * 2,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters8 = int(self.filters * 2 * self.alpha * 0.167) \
-                        + int(self.filters * 2 * self.alpha * 0.333) \
-                        + int(self.filters * 2 * self.alpha * 0.5)
-        self.upsample9 = self.upsample(self.in_filters8, 
-                                                  self.filters,
-                                                  kernel_size=(2),
-                                                  stride=(2))
+        self.in_filters8 = (
+            int(self.filters * 2 * self.alpha * 0.167)
+            + int(self.filters * 2 * self.alpha * 0.333)
+            + int(self.filters * 2 * self.alpha * 0.5)
+        )
+        self.upsample9 = self.upsample(
+            self.in_filters8, self.filters, kernel_size=(2), stride=(2)
+        )
 
-        self.multiresblock9 = Multiresblock(self.filters * 2, self.filters,
-                                            self.conv_op, self.conv_kwargs,
-                                            self.norm_op, self.norm_op_kwargs,
-                                            self.dropout_op, self.dropout_op_kwargs,
-                                            self.nonlin, self.nonlin_kwargs,
-                                            self.basic_block)
+        self.multiresblock9 = Multiresblock(
+            self.filters * 2,
+            self.filters,
+            self.conv_op,
+            self.conv_kwargs,
+            self.norm_op,
+            self.norm_op_kwargs,
+            self.dropout_op,
+            self.dropout_op_kwargs,
+            self.nonlin,
+            self.nonlin_kwargs,
+            self.basic_block,
+        )
 
-        self.in_filters9 = int(self.filters*self.alpha * 0.167) \
-                        + int(self.filters*self.alpha * 0.333) \
-                        + int(self.filters*self.alpha * 0.5)
-        self.conv_final = self.conv_op(self.in_filters9, self.num_classes, 1, 1, 0, 1, 1, False)
+        self.in_filters9 = (
+            int(self.filters * self.alpha * 0.167)
+            + int(self.filters * self.alpha * 0.333)
+            + int(self.filters * self.alpha * 0.5)
+        )
+        self.conv_final = self.conv_op(
+            self.in_filters9, self.num_classes, 1, 1, 0, 1, 1, False
+        )
 
         if not dropout_in_decoder:
-            self.dropout_op_kwargs['p'] = old_dropout_p
+            self.dropout_op_kwargs["p"] = old_dropout_p
 
         if self.weightInitializer is not None:
             print("initializing weights")
             self.apply(self.weightInitializer)
 
-    def forward(self, x : torch.Tensor) -> torch.Tensor:
-
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x_multires1 = self.multiresblock1(x)
         x_pool1 = self.pool1(x_multires1)
         x_multires1 = self.respath1(x_multires1)
