@@ -3,10 +3,29 @@ from torch import nn
 from torch.nn import functional as F
 
 
+class ASPPConv(nn.Sequential):
+    def __init__(self, in_channels, out_channels, dilation):
+        modules = [
+            nn.Conv2d(
+                in_channels,
+                out_channels,
+                3,
+                padding=dilation,
+                dilation=dilation,
+                bias=False,
+            ),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        ]
+        super(ASPPConv, self).__init__(*modules)
+
+
 class DeepLabHeadV3Plus(nn.Module):
-    def __init__(self, in_channels, low_level_channels, num_classes, aspp_dilate=[12, 24, 36]):
+    def __init__(
+        self, in_channels, low_level_channels, num_classes, aspp_dilate=[12, 24, 36]
+    ):
         super(DeepLabHeadV3Plus, self).__init__()
-        self.project = nn.Sequential( 
+        self.project = nn.Sequential(
             nn.Conv2d(low_level_channels, 48, 1, bias=False),
             nn.BatchNorm2d(48),
             nn.ReLU(inplace=True),
@@ -18,16 +37,21 @@ class DeepLabHeadV3Plus(nn.Module):
             nn.Conv2d(304, 256, 3, padding=1, bias=False),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            nn.Conv2d(256, num_classes, 1)
+            nn.Conv2d(256, num_classes, 1),
         )
         self._init_weight()
 
     def forward(self, feature):
-        low_level_feature = self.project( feature['low_level'] )
-        output_feature = self.aspp(feature['out'])
-        output_feature = F.interpolate(output_feature, size=low_level_feature.shape[2:], mode='bilinear', align_corners=False)
-        return self.classifier( torch.cat( [ low_level_feature, output_feature ], dim=1 ) )
-    
+        low_level_feature = self.project(feature["low_level"])
+        output_feature = self.aspp(feature["out"])
+        output_feature = F.interpolate(
+            output_feature,
+            size=low_level_feature.shape[2:],
+            mode="bilinear",
+            align_corners=False,
+        )
+        return self.classifier(torch.cat([low_level_feature, output_feature], dim=1))
+
     def _init_weight(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
