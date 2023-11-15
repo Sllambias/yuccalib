@@ -8,12 +8,14 @@ def get_nib_spacing(nib_image):
 
 def get_nib_orientation(nib_image):
     affine = nib_image.affine
-    return ''.join(nio.aff2axcodes(affine))
+    return "".join(nio.aff2axcodes(affine))
 
 
-def reorient_nib_image(nib_image, original_orientation: str, target_orientation: str) -> np.ndarray:
-    # The reason we don't use the affine information to get original_orientation is that it can be 
-    # incorrect. Therefore it can be manually specified. In the cases where header can be trusted, 
+def reorient_nib_image(
+    nib_image, original_orientation: str, target_orientation: str
+) -> np.ndarray:
+    # The reason we don't use the affine information to get original_orientation is that it can be
+    # incorrect. Therefore it can be manually specified. In the cases where header can be trusted,
     # Just use get_nib_orientation to get the original_orientation.
     if original_orientation == target_orientation:
         return nib_image
