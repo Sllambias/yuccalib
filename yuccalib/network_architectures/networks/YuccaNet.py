@@ -1,6 +1,8 @@
 import torch
 from torch import nn
-from yuccalib.network_architectures.utils.get_steps_for_sliding_window import get_steps_for_sliding_window
+from yuccalib.network_architectures.utils.get_steps_for_sliding_window import (
+    get_steps_for_sliding_window,
+)
 
 
 class YuccaNet(nn.Module):
@@ -24,22 +26,37 @@ class YuccaNet(nn.Module):
 
         self.eval()
         with torch.no_grad():
-            if mode == '3D':
+            if mode == "3D":
                 predict = self._predict3D
-            if mode == '2D':
+            if mode == "2D":
                 predict = self._predict2D
 
             pred = predict(data, patch_size, overlap)
             if mirror:
-                pred += torch.flip(predict(torch.flip(data, (2, )), patch_size, overlap), (2, ))
-                pred += torch.flip(predict(torch.flip(data, (3,)), patch_size, overlap), (3, ))
-                pred += torch.flip(predict(torch.flip(data, (2, 3)), patch_size, overlap), (2, 3))
+                pred += torch.flip(
+                    predict(torch.flip(data, (2,)), patch_size, overlap), (2,)
+                )
+                pred += torch.flip(
+                    predict(torch.flip(data, (3,)), patch_size, overlap), (3,)
+                )
+                pred += torch.flip(
+                    predict(torch.flip(data, (2, 3)), patch_size, overlap), (2, 3)
+                )
                 div = 4
-                if mode == '3D':
-                    pred += torch.flip(predict(torch.flip(data, (4, )), patch_size, overlap), (4, ))
-                    pred += torch.flip(predict(torch.flip(data, (2, 4)), patch_size, overlap), (2, 4))
-                    pred += torch.flip(predict(torch.flip(data, (3, 4)), patch_size, overlap), (3, 4))
-                    pred += torch.flip(predict(torch.flip(data, (2, 3, 4)), patch_size, overlap), (2, 3, 4))
+                if mode == "3D":
+                    pred += torch.flip(
+                        predict(torch.flip(data, (4,)), patch_size, overlap), (4,)
+                    )
+                    pred += torch.flip(
+                        predict(torch.flip(data, (2, 4)), patch_size, overlap), (2, 4)
+                    )
+                    pred += torch.flip(
+                        predict(torch.flip(data, (3, 4)), patch_size, overlap), (3, 4)
+                    )
+                    pred += torch.flip(
+                        predict(torch.flip(data, (2, 3, 4)), patch_size, overlap),
+                        (2, 3, 4),
+                    )
                     div += 4
                 pred /= div
         return pred
@@ -48,55 +65,73 @@ class YuccaNet(nn.Module):
         """
         Sliding window prediction implementation
         """
-        canvas = torch.zeros((1, self.num_classes, *data.shape[2:]),
-                             device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+        canvas = torch.zeros(
+            (1, self.num_classes, *data.shape[2:]),
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        )
 
-        x_steps, y_steps, z_steps = get_steps_for_sliding_window(data.shape[2:], patch_size, overlap)
+        x_steps, y_steps, z_steps = get_steps_for_sliding_window(
+            data.shape[2:], patch_size, overlap
+        )
         px, py, pz = patch_size
 
         for xs in x_steps:
             for ys in y_steps:
                 for zs in z_steps:
                     # check if out of bounds
-                    out = self.forward(data[:, :, xs:xs+px, ys:ys+py, zs:zs+pz])
-                    canvas[:, :, xs:xs+px, ys:ys+py, zs:zs+pz] += out
+                    out = self.forward(
+                        data[:, :, xs : xs + px, ys : ys + py, zs : zs + pz]
+                    )
+                    canvas[:, :, xs : xs + px, ys : ys + py, zs : zs + pz] += out
         return canvas
 
     def _predict2D(self, data, patch_size, overlap):
         """
         Sliding window prediction implementation
         """
-        canvas = torch.zeros((1, self.num_classes, *data.shape[2:]),
-                             device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+        canvas = torch.zeros(
+            (1, self.num_classes, *data.shape[2:]),
+            device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        )
 
         px, py = patch_size
 
         # If we have 5 dimensions we are working with 3D data, and need to predict each slice.
         if len(data.shape) == 5:
-            x_steps, y_steps = get_steps_for_sliding_window(data.shape[3:], patch_size, overlap)
+            x_steps, y_steps = get_steps_for_sliding_window(
+                data.shape[3:], patch_size, overlap
+            )
             for idx in range(data.shape[2]):
                 for xs in x_steps:
                     for ys in y_steps:
-                        out = self.forward(data[:,:,idx, xs:xs+px, ys:ys+py])
-                        canvas[:, :, idx, xs:xs+px, ys:ys+py] += out
+                        out = self.forward(data[:, :, idx, xs : xs + px, ys : ys + py])
+                        canvas[:, :, idx, xs : xs + px, ys : ys + py] += out
             return canvas
 
-        #else we proceed with the data as 2D
-        x_steps, y_steps = get_steps_for_sliding_window(data.shape[2:], patch_size, overlap)
+        # else we proceed with the data as 2D
+        x_steps, y_steps = get_steps_for_sliding_window(
+            data.shape[2:], patch_size, overlap
+        )
 
         for xs in x_steps:
             for ys in y_steps:
-                    # check if out of bounds
-                    out = self.forward(data[:, :, xs:xs+px, ys:ys+py])
-                    canvas[:, :, xs:xs+px, ys:ys+py] += out
+                # check if out of bounds
+                out = self.forward(data[:, :, xs : xs + px, ys : ys + py])
+                canvas[:, :, xs : xs + px, ys : ys + py] += out
         return canvas
+
 
 class InitWeights_He(object):
     def __init__(self, neg_slope=1e-2):
         self.neg_slope = neg_slope
 
     def __call__(self, module):
-        if isinstance(module, nn.Conv3d) or isinstance(module, nn.Conv2d) or isinstance(module, nn.ConvTranspose2d) or isinstance(module, nn.ConvTranspose3d):
+        if (
+            isinstance(module, nn.Conv3d)
+            or isinstance(module, nn.Conv2d)
+            or isinstance(module, nn.ConvTranspose2d)
+            or isinstance(module, nn.ConvTranspose3d)
+        ):
             module.weight = nn.init.kaiming_normal_(module.weight, a=self.neg_slope)
             if module.bias is not None:
                 module.bias = nn.init.constant_(module.bias, 0)

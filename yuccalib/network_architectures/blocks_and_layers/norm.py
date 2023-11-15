@@ -8,7 +8,7 @@ class LayerNorm3d(nn.Module):
         self.weight = nn.Parameter(torch.ones(normalized_shape))
         self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.eps = eps
-        self.normalized_shape = (normalized_shape, )
+        self.normalized_shape = (normalized_shape,)
 
     def forward(self, x):
         u = x.mean(1, keepdim=True)
@@ -26,7 +26,7 @@ class LayerNorm2d(nn.Module):
         self.weight = nn.Parameter(torch.ones(normalized_shape))
         self.bias = nn.Parameter(torch.zeros(normalized_shape))
         self.eps = eps
-        self.normalized_shape = (normalized_shape, )
+        self.normalized_shape = (normalized_shape,)
 
     def forward(self, x):
         u = x.mean(1, keepdim=True)

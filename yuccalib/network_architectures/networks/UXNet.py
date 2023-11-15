@@ -4,26 +4,38 @@ from monai.networks.blocks import UnetrBasicBlock, UnetrUpBlock
 from monai.networks.blocks.dynunet_block import UnetOutBlock
 from yuccalib.network_architectures.networks.YuccaNet import YuccaNet
 from yuccalib.network_architectures.blocks_and_layers.conv_blocks import UXNet_encoder
-from yuccalib.network_architectures.blocks_and_layers.norm import LayerNorm2d, LayerNorm3d
+from yuccalib.network_architectures.blocks_and_layers.norm import (
+    LayerNorm2d,
+    LayerNorm3d,
+)
+
 
 class UXNet(YuccaNet):
     "https://github.com/MASILab/3DUX-Net/blob/main/networks/UXNet_3D/uxnet_encoder.py"
-    def __init__(self,
-                 input_channels: int,
-                 num_classes: int = 1,
-                 patch_size: Tuple = None,
-                 conv_op=nn.Conv2d,
-                 conv_kwargs={'kernel_size': 3, 'stride': 1, 'padding': 1, 'dilation': 1, 'bias': True},
-                 norm_op=nn.InstanceNorm2d,
-                 norm_op_kwargs={'eps': 1e-5, 'affine': True, 'momentum': 0.1},
-                 dropout_op=nn.Dropout2d,
-                 dropout_op_kwargs={'p': 0.0, 'inplace': True},
-                 nonlin=nn.LeakyReLU,
-                 nonlin_kwargs={'negative_slope': 1e-2, 'inplace': True},
-                 weightInitializer=None,
-                 basic_block=None,
-                 deep_supervision=False,
-                 ) -> None:
+
+    def __init__(
+        self,
+        input_channels: int,
+        num_classes: int = 1,
+        patch_size: Tuple = None,
+        conv_op=nn.Conv2d,
+        conv_kwargs={
+            "kernel_size": 3,
+            "stride": 1,
+            "padding": 1,
+            "dilation": 1,
+            "bias": True,
+        },
+        norm_op=nn.InstanceNorm2d,
+        norm_op_kwargs={"eps": 1e-5, "affine": True, "momentum": 0.1},
+        dropout_op=nn.Dropout2d,
+        dropout_op_kwargs={"p": 0.0, "inplace": True},
+        nonlin=nn.LeakyReLU,
+        nonlin_kwargs={"negative_slope": 1e-2, "inplace": True},
+        weightInitializer=None,
+        basic_block=None,
+        deep_supervision=False,
+    ) -> None:
         """
         Args:
             in_channels: dimension of input channels.
@@ -39,7 +51,7 @@ class UXNet(YuccaNet):
 
         """
         super(UXNet, self).__init__()
-        
+
         if conv_op == nn.Conv2d:
             norm_op = LayerNorm2d
         else:
@@ -53,7 +65,7 @@ class UXNet(YuccaNet):
         self.depths = [2, 2, 2, 2]
         self.feat_size = [48, 96, 192, 384]
 
-        if not (0 <= dropout_op_kwargs['p'] <= 1):
+        if not (0 <= dropout_op_kwargs["p"] <= 1):
             raise AssertionError("dropout_rate should be between 0 and 1.")
 
         # Task specific
@@ -62,7 +74,7 @@ class UXNet(YuccaNet):
         # Model parameters
         self.conv_op = conv_op
         self.conv_kwargs = conv_kwargs
-        self.norm_op_kwargs = {'eps': 1e-5}
+        self.norm_op_kwargs = {"eps": 1e-5}
         self.norm_op = norm_op
         self.dropout_op = dropout_op
         self.dropout_op_kwargs = dropout_op_kwargs
@@ -90,7 +102,7 @@ class UXNet(YuccaNet):
             norm_op=self.norm_op,
             drop_path_rate=self.drop_path_rate,
             layer_scale_init_value=1e-6,
-            out_indices=self.out_indice
+            out_indices=self.out_indice,
         )
 
         self.encoder1 = UnetrBasicBlock(
@@ -100,7 +112,8 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
         self.encoder2 = UnetrBasicBlock(
             spatial_dims=self.spatial_dims,
@@ -109,7 +122,8 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
         self.encoder3 = UnetrBasicBlock(
             spatial_dims=self.spatial_dims,
@@ -118,7 +132,8 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
         self.encoder4 = UnetrBasicBlock(
             spatial_dims=self.spatial_dims,
@@ -127,7 +142,8 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
         self.encoder5 = UnetrBasicBlock(
             spatial_dims=self.spatial_dims,
@@ -136,9 +152,12 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
-        
-        self.ds_out_conv0 = self.conv_op(self.hidden_size, self.num_classes, kernel_size=1)
+            res_block=res_block,
+        )
+
+        self.ds_out_conv0 = self.conv_op(
+            self.hidden_size, self.num_classes, kernel_size=1
+        )
 
         self.decoder1 = UnetrUpBlock(
             spatial_dims=self.spatial_dims,
@@ -147,9 +166,12 @@ class UXNet(YuccaNet):
             kernel_size=3,
             upsample_kernel_size=2,
             norm_name=norm_name,
-            res_block=res_block,)
-        
-        self.ds_out_conv1 = self.conv_op(self.feat_size[3], self.num_classes, kernel_size=1)
+            res_block=res_block,
+        )
+
+        self.ds_out_conv1 = self.conv_op(
+            self.feat_size[3], self.num_classes, kernel_size=1
+        )
 
         self.decoder2 = UnetrUpBlock(
             spatial_dims=self.spatial_dims,
@@ -158,9 +180,12 @@ class UXNet(YuccaNet):
             kernel_size=3,
             upsample_kernel_size=2,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
-        self.ds_out_conv2 = self.conv_op(self.feat_size[2], self.num_classes, kernel_size=1)
+        self.ds_out_conv2 = self.conv_op(
+            self.feat_size[2], self.num_classes, kernel_size=1
+        )
 
         self.decoder3 = UnetrUpBlock(
             spatial_dims=self.spatial_dims,
@@ -169,9 +194,12 @@ class UXNet(YuccaNet):
             kernel_size=3,
             upsample_kernel_size=2,
             norm_name=norm_name,
-            res_block=res_block,)
+            res_block=res_block,
+        )
 
-        self.ds_out_conv3 = self.conv_op(self.feat_size[1], self.num_classes, kernel_size=1)
+        self.ds_out_conv3 = self.conv_op(
+            self.feat_size[1], self.num_classes, kernel_size=1
+        )
 
         self.decoder4 = UnetrUpBlock(
             spatial_dims=self.spatial_dims,
@@ -180,8 +208,9 @@ class UXNet(YuccaNet):
             kernel_size=3,
             upsample_kernel_size=2,
             norm_name=norm_name,
-            res_block=res_block,)
-        
+            res_block=res_block,
+        )
+
         self.decoder5 = UnetrBasicBlock(
             spatial_dims=self.spatial_dims,
             in_channels=self.feat_size[0],
@@ -189,14 +218,14 @@ class UXNet(YuccaNet):
             kernel_size=3,
             stride=1,
             norm_name=norm_name,
-            res_block=res_block,)
-        
+            res_block=res_block,
+        )
+
         self.out = UnetOutBlock(spatial_dims=self.spatial_dims, in_channels=self.feat_size[0], out_channels=self.num_classes)  # type: ignore
 
         if self.weightInitializer is not None:
             print("initializing weights")
             self.apply(self.weightInitializer)
-
 
     def forward(self, x_in):
         outs = self.uxnet(x_in)
@@ -223,5 +252,5 @@ class UXNet(YuccaNet):
             ds3 = self.ds_out_conv3(dec3)
             ds4 = self.out(dec5)
             return [ds4, ds3, ds2, ds1, ds0]
-        
+
         return self.out(dec5)

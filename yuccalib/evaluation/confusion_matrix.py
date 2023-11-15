@@ -10,7 +10,7 @@ def torch_confusion_matrix_from_logits(pred, seg):
 
     n_classes = pred.shape[1]
 
-    cfm = ConfusionMatrix(task='multiclass', num_classes=n_classes)
+    cfm = ConfusionMatrix(task="multiclass", num_classes=n_classes)
 
     if torch.cuda.is_available():
         cfm = cfm.to("cuda")

@@ -28,9 +28,13 @@ import warnings
 from yuccalib.utils.files_and_folders import recursive_find_python_class
 from batchgenerators.utilities.file_and_folder_operations import join
 from torch import nn
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
-def estimate_memory_training(model, model_input, optimizer_type=torch.optim.Adam, use_amp=True, device=None):
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+
+def estimate_memory_training(
+    model, model_input, optimizer_type=torch.optim.Adam, use_amp=True, device=None
+):
     """Predict the maximum memory usage of the model.
     Args:
         optimizer_type (Type): the class name of the optimizer to instantiate
@@ -41,10 +45,10 @@ def estimate_memory_training(model, model_input, optimizer_type=torch.optim.Adam
         use_amp (bool): whether to estimate based on using mixed precision
         device (torch.device): the device to use
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Reset model and optimizer
     model.cpu()
-    optimizer = optimizer_type(model.parameters(), lr=.001)
+    optimizer = optimizer_type(model.parameters(), lr=0.001)
     a = torch.cuda.memory_allocated(device)
     model.to(device)
     b = torch.cuda.memory_allocated(device)
@@ -52,10 +56,10 @@ def estimate_memory_training(model, model_input, optimizer_type=torch.optim.Adam
     output = model(model_input.to(device)).sum()
     c = torch.cuda.memory_allocated(device)
     if use_amp:
-        amp_multiplier = .5
+        amp_multiplier = 0.5
     else:
         amp_multiplier = 1
-    forward_pass_memory = (c - b)*amp_multiplier
+    forward_pass_memory = (c - b) * amp_multiplier
     gradient_memory = model_memory
     if isinstance(optimizer, torch.optim.Adam):
         o = 2
@@ -66,19 +70,31 @@ def estimate_memory_training(model, model_input, optimizer_type=torch.optim.Adam
     elif isinstance(optimizer, torch.optim.Adagrad):
         o = 1
     else:
-        raise ValueError("Unsupported optimizer. Look up how many moments are" +
-                         "stored by your optimizer and add a case to the optimizer checker.")
-    gradient_moment_memory = o*gradient_memory
-    total_memory_bytes = model_memory + forward_pass_memory + gradient_memory + gradient_moment_memory
-    total_memory_gb = total_memory_bytes*1e-9
+        raise ValueError(
+            "Unsupported optimizer. Look up how many moments are"
+            + "stored by your optimizer and add a case to the optimizer checker."
+        )
+    gradient_moment_memory = o * gradient_memory
+    total_memory_bytes = (
+        model_memory + forward_pass_memory + gradient_memory + gradient_moment_memory
+    )
+    total_memory_gb = total_memory_bytes * 1e-9
     return total_memory_gb
 
 
-def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name, max_patch_size,
-                             max_memory_usage_in_gb=None):
+def find_optimal_tensor_dims(
+    dimensionality,
+    num_classes,
+    modalities,
+    model_name,
+    max_patch_size,
+    max_memory_usage_in_gb=None,
+):
     if max_memory_usage_in_gb is None:
         try:
-            gpu_vram_in_gb = int(torch.cuda.get_device_properties(0).total_memory / 1024**2 * 0.001)
+            gpu_vram_in_gb = int(
+                torch.cuda.get_device_properties(0).total_memory / 1024**2 * 0.001
+            )
         except RuntimeError:
             gpu_vram_in_gb = 12
         # Don't wanna utilize more than 12GB, to ensure epoch times are kept relatively low
@@ -88,8 +104,8 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
     offset = 2.5
 
     OOM_OR_MAXED = False
-    
-    if dimensionality == '2D':
+
+    if dimensionality == "2D":
         if len(max_patch_size) == 3:
             max_patch_size = max_patch_size[1:]
         conv = nn.Conv2d
@@ -97,21 +113,30 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
         norm = nn.InstanceNorm2d
         batch_size = 16
         max_batch_size = 128
-        patch_size = [32, 32] if not model_name == 'UNetR' else [64, 64]
-    if dimensionality == '3D':
+        patch_size = [32, 32] if not model_name == "UNetR" else [64, 64]
+    if dimensionality == "3D":
         conv = nn.Conv3d
         dropout = nn.Dropout3d
         norm = nn.InstanceNorm3d
         batch_size = 2
         max_batch_size = 2
-        patch_size = [32, 32, 32] if not model_name == 'UNetR' else [64, 64, 64]
+        patch_size = [32, 32, 32] if not model_name == "UNetR" else [64, 64, 64]
 
     absolute_max = 128**3
 
-    model = recursive_find_python_class(folder=[join(yuccalib.__path__[0], 'network_architectures')],
-                                        class_name=model_name,
-                                        current_module='yuccalib.network_architectures')
-    model = model(input_channels=modalities, num_classes=num_classes, conv_op=conv, patch_size=patch_size, dropout_op=dropout, norm_op=norm)
+    model = recursive_find_python_class(
+        folder=[join(yuccalib.__path__[0], "network_architectures")],
+        class_name=model_name,
+        current_module="yuccalib.network_architectures",
+    )
+    model = model(
+        input_channels=modalities,
+        num_classes=num_classes,
+        conv_op=conv,
+        patch_size=patch_size,
+        dropout_op=dropout,
+        norm_op=norm,
+    )
 
     est = 0
     idx = 0
@@ -129,13 +154,23 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
 
             if patch_size[idx] + 16 < max_patch_size[idx]:
                 patch_size[idx] += 16
-                if model_name == 'UNetR': # we need to re-instantiate it because of the ViT
-                    model = recursive_find_python_class(folder=[join(yuccalib.__path__[0], 'network_architectures')],
-                                                        class_name=model_name,
-                                                        current_module='yuccalib.network_architectures')
-                    model = model(input_channels=modalities, conv_op=conv, patch_size=patch_size, dropout_op=dropout, norm_op=norm)
+                if (
+                    model_name == "UNetR"
+                ):  # we need to re-instantiate it because of the ViT
+                    model = recursive_find_python_class(
+                        folder=[join(yuccalib.__path__[0], "network_architectures")],
+                        class_name=model_name,
+                        current_module="yuccalib.network_architectures",
+                    )
+                    model = model(
+                        input_channels=modalities,
+                        conv_op=conv,
+                        patch_size=patch_size,
+                        dropout_op=dropout,
+                        norm_op=norm,
+                    )
 
-                if idx < len(patch_size)-1:
+                if idx < len(patch_size) - 1:
                     idx += 1
                 else:
                     idx = 0
@@ -146,7 +181,7 @@ def find_optimal_tensor_dims(dimensionality, num_classes, modalities, model_name
                 # if not all dimensions are maxed out for the patch_size,
                 # we try the next dimension
                 if not len(maxed_idxs) == len(patch_size):
-                    if idx < len(patch_size)-1:
+                    if idx < len(patch_size) - 1:
                         idx += 1
                     else:
                         idx = 0

@@ -20,7 +20,6 @@ class LossTree:
         self.layers = set(self.layers)
         self.get_loss_layers()
 
-
     def recursive_expand(self, treedict, starting_node=None, starting_layer=-1):
         starting_layer += 1
         if not starting_node:
@@ -33,12 +32,16 @@ class LossTree:
             if not isinstance(value, dict):
                 newnode.channel = value
             else:
-                self.recursive_expand(value, starting_node=newnode, starting_layer=starting_layer)
+                self.recursive_expand(
+                    value, starting_node=newnode, starting_layer=starting_layer
+                )
 
     def get_loss_layers(self):
         for layer in self.layers:
             layer_list = []
-            self.loss_layers.append(self.recursive_loss_layers(layer, self.root, layer_list))
+            self.loss_layers.append(
+                self.recursive_loss_layers(layer, self.root, layer_list)
+            )
 
     def get_subclasses(self, node, class_list):
         if len(node.children) == 0:
@@ -51,16 +54,16 @@ class LossTree:
     def print(self, node=None, indent=0):
         if not node:
             node = self.root
-            prefix=""
+            prefix = ""
         else:
             prefix = "|- " + str(node.layer) + ". "
 
-        if len(node.children)==0:
-            print(" "*indent + prefix + node.name + " = " + str(node.channel))
+        if len(node.children) == 0:
+            print(" " * indent + prefix + node.name + " = " + str(node.channel))
         else:
-            print(" "*indent + prefix + node.name)
+            print(" " * indent + prefix + node.name)
             for child in node.children:
-                self.print(child,indent+4)
+                self.print(child, indent + 4)
 
     def recursive_loss_layers(self, layer, starting_node, layer_list):
         for child in starting_node.children:
