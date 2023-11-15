@@ -198,9 +198,10 @@ def merge_softmax_from_folders(folders: list, outpath, method="sum"):
 
 
 class WriteSegFromLogits(BasePredictionWriter):
-    def __init__(self, output_dir, write_interval):
+    def __init__(self, output_dir, save_softmax, write_interval):
         super().__init__(write_interval)
         self.output_dir = output_dir
+        self.save_softmax = save_softmax
 
     def write_on_batch_end(self, trainer, pl_module, data_dict, batch_indices, *args):
         # this will create N (num processes) files in `output_dir` each containing
@@ -211,5 +212,8 @@ class WriteSegFromLogits(BasePredictionWriter):
             data_dict["case_id"],
         )
         save_segmentation_from_logits(
-            logits, join(self.output_dir, case_id), properties=properties
+            logits,
+            join(self.output_dir, case_id),
+            properties=properties,
+            save_softmax=self.save_softmax,
         )
