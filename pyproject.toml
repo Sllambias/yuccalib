@@ -27,9 +27,6 @@ dependencies = [
     'timm>=0.9.8',
 ]
 
-[tool.setuptools]
-packages = ["yuccalib"]
-
 [project.optional-dependencies]
 test = [
     'pytest>=7.3',
