@@ -17,9 +17,9 @@ class UNetR(YuccaNet):
     def __init__(
         self,
         input_channels: int,
+        patch_size: list | Tuple,
         dropout_op_kwargs={"p": 0.0},
         num_classes: int = 1,
-        patch_size: Tuple = None,
         starting_filters: int = 16,
         weightInitializer=None,
         basic_block=None,
