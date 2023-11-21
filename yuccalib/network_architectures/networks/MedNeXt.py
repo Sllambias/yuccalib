@@ -23,9 +23,6 @@ class MedNeXt(YuccaNet):
         input_channels: int,
         num_classes: int = 1,
         conv_op=None,
-        norm_op=None,  # Added for functionality
-        dropout_op=None,  # Added for functionality
-        patch_size=None,  # Added for functionality
         n_channels: int = 32,
         exp_r=[3, 4, 8, 8, 8, 8, 8, 4, 3],  # Expansion ratio as in Swin Transformers
         kernel_size: int = 5,  # Ofcourse can test kernel_size
@@ -34,8 +31,7 @@ class MedNeXt(YuccaNet):
         deep_supervision: bool = False,  # Can be used to test deep supervision
         do_res: bool = True,  # Can be used to individually test residual connection
         do_res_up_down: bool = True,  # Additional 'res' connection on up and down convs
-        # checkpoint_style='outside_block',                  # Either inside block or outside block
-        checkpoint_style=None,
+        checkpoint_style="outside_block",  # Either inside block or outside block
         block_counts: list = [
             3,
             4,
@@ -55,11 +51,10 @@ class MedNeXt(YuccaNet):
         self.deep_supervision = deep_supervision
         self.num_classes = num_classes
         assert checkpoint_style in [None, "outside_block"]
-        self.inside_block_checkpointing = False
-        self.outside_block_checkpointing = True
         if checkpoint_style == "outside_block":
             self.outside_block_checkpointing = True
-
+        else:
+            self.outside_block_checkpointing = False
         if kernel_size is not None:
             enc_kernel_size = kernel_size
             dec_kernel_size = kernel_size

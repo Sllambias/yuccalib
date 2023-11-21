@@ -26,6 +26,8 @@ import yucca
 import yuccalib
 import warnings
 from yuccalib.utils.files_and_folders import recursive_find_python_class
+from yuccalib.utils.kwargs import filter_kwargs
+
 from batchgenerators.utilities.file_and_folder_operations import join
 from torch import nn
 
@@ -129,14 +131,16 @@ def find_optimal_tensor_dims(
         class_name=model_name,
         current_module="yuccalib.network_architectures",
     )
-    model = model(
-        input_channels=modalities,
-        num_classes=num_classes,
-        conv_op=conv,
-        patch_size=patch_size,
-        dropout_op=dropout,
-        norm_op=norm,
-    )
+    model_kwargs = {
+        "input_channels": modalities,
+        "num_classes": num_classes,
+        "conv_op": conv,
+        "patch_size": patch_size,
+        "dropout_op": dropout,
+        "norm_op": norm,
+    }
+    model_kwargs = filter_kwargs(model, model_kwargs)
+    model = model(**model_kwargs)
 
     est = 0
     idx = 0
@@ -162,13 +166,7 @@ def find_optimal_tensor_dims(
                         class_name=model_name,
                         current_module="yuccalib.network_architectures",
                     )
-                    model = model(
-                        input_channels=modalities,
-                        conv_op=conv,
-                        patch_size=patch_size,
-                        dropout_op=dropout,
-                        norm_op=norm,
-                    )
+                    model = model(**model_kwargs)
 
                 if idx < len(patch_size) - 1:
                     idx += 1

@@ -20,20 +20,6 @@ class UNetR(YuccaNet):
         num_classes: int = 1,
         patch_size: Tuple = None,
         starting_filters: int = 16,
-        conv_op=nn.Conv2d,
-        conv_kwargs={
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 1,
-            "dilation": 1,
-            "bias": True,
-        },
-        norm_op=nn.InstanceNorm2d,
-        norm_op_kwargs={"eps": 1e-5, "affine": True, "momentum": 0.1},
-        dropout_op=nn.Dropout2d,
-        dropout_op_kwargs={"p": 0.0, "inplace": True},
-        nonlin=nn.LeakyReLU,
-        nonlin_kwargs={"negative_slope": 1e-2, "inplace": True},
         weightInitializer=None,
         basic_block=None,
     ) -> None:
@@ -87,16 +73,7 @@ class UNetR(YuccaNet):
         self.filters = starting_filters
 
         # Model parameters
-        self.conv_op = conv_op
-        self.conv_kwargs = conv_kwargs
-        self.norm_op_kwargs = norm_op_kwargs
-        self.norm_op = norm_op
-        self.dropout_op = dropout_op
-        self.dropout_op_kwargs = dropout_op_kwargs
-        self.nonlin_kwargs = nonlin_kwargs
-        self.nonlin = nonlin
         self.weightInitializer = weightInitializer
-        self.basic_block = basic_block
 
         self.num_layers = 12
         if len(patch_size) == 2:

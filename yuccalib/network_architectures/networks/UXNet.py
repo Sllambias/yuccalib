@@ -17,33 +17,14 @@ class UXNet(YuccaNet):
         self,
         input_channels: int,
         num_classes: int = 1,
-        patch_size: Tuple = None,
         conv_op=nn.Conv2d,
-        conv_kwargs={
-            "kernel_size": 3,
-            "stride": 1,
-            "padding": 1,
-            "dilation": 1,
-            "bias": True,
-        },
-        norm_op=nn.InstanceNorm2d,
-        norm_op_kwargs={"eps": 1e-5, "affine": True, "momentum": 0.1},
-        dropout_op=nn.Dropout2d,
-        dropout_op_kwargs={"p": 0.0, "inplace": True},
-        nonlin=nn.LeakyReLU,
-        nonlin_kwargs={"negative_slope": 1e-2, "inplace": True},
         weightInitializer=None,
-        basic_block=None,
         deep_supervision=False,
     ) -> None:
         """
         Args:
             in_channels: dimension of input channels.
             num_classes: dimension of output channels.
-            patch_size: dimension of input patch.
-            starting_filters: dimension of network feature size.
-            hidden_size: dimension of hidden layer.
-            norm_name: feature normalization type and arguments.
             conv_block: bool argument to determine if convolutional block is used.
             res_block: bool argument to determine if residual block is used.
             dropout_rate: faction of the input units to drop.
@@ -53,9 +34,12 @@ class UXNet(YuccaNet):
         super(UXNet, self).__init__()
 
         if conv_op == nn.Conv2d:
-            norm_op = LayerNorm2d
+            self.norm_op = LayerNorm2d
+            self.spatial_dims = 2
+
         else:
-            norm_op = LayerNorm3d
+            self.norm_op = LayerNorm3d
+            self.spatial_dims = 3
 
         # Fixed parameters
         self.hidden_size = 768
@@ -65,30 +49,16 @@ class UXNet(YuccaNet):
         self.depths = [2, 2, 2, 2]
         self.feat_size = [48, 96, 192, 384]
 
-        if not (0 <= dropout_op_kwargs["p"] <= 1):
-            raise AssertionError("dropout_rate should be between 0 and 1.")
-
         # Task specific
         self.num_classes = num_classes
 
         # Model parameters
         self.conv_op = conv_op
-        self.conv_kwargs = conv_kwargs
         self.norm_op_kwargs = {"eps": 1e-5}
-        self.norm_op = norm_op
-        self.dropout_op = dropout_op
-        self.dropout_op_kwargs = dropout_op_kwargs
-        self.nonlin_kwargs = nonlin_kwargs
-        self.nonlin = nn.GELU
         self.weightInitializer = weightInitializer
-        self.basic_block = basic_block
         self.deep_supervision = deep_supervision
 
         self.num_layers = 12
-        if len(patch_size) == 2:
-            self.spatial_dims = 2
-        else:
-            self.spatial_dims = 3
 
         self.out_indice = []
         for i in range(len(self.feat_size)):

@@ -11,7 +11,6 @@ class UNet(YuccaNet):
         self,
         input_channels: int,
         num_classes: int = 1,
-        patch_size=None,  # Purely functionality
         starting_filters: int = 64,
         conv_op=nn.Conv2d,
         conv_kwargs={
