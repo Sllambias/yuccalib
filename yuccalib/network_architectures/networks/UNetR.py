@@ -17,6 +17,7 @@ class UNetR(YuccaNet):
     def __init__(
         self,
         input_channels: int,
+        dropout_op_kwargs={"p": 0.0},
         num_classes: int = 1,
         patch_size: Tuple = None,
         starting_filters: int = 16,
@@ -36,7 +37,6 @@ class UNetR(YuccaNet):
             norm_name: feature normalization type and arguments.
             conv_block: bool argument to determine if convolutional block is used.
             res_block: bool argument to determine if residual block is used.
-            dropout_rate: faction of the input units to drop.
 
         Examples::
 
