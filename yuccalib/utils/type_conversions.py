@@ -1,6 +1,17 @@
 import nibabel as nib
 import numpy as np
+import os
 from PIL import Image
+
+
+def read_any_file(imagepath, dtype=np.float32):
+    ext = imagepath.split(os.extsep, 1)[1]
+    if ext in ["nii", "nii.gz"]:
+        return nib.load(imagepath)
+    elif ext in ["png"]:
+        return np.array(Image.open(imagepath).convert("L"), dtype=dtype)
+    elif ext in ["csv", "txt"]:
+        return np.genfromtxt(imagepath, delimiter=",", dtype=dtype)
 
 
 def np_to_nifti_with_empty_header(array):
@@ -11,6 +22,8 @@ def np_to_nifti_with_empty_header(array):
 
 
 def nib_to_np(nib_image):
+    if not isinstance(nib_image, nib.Nifti1Image):
+        return nib_image
     return nib_image.get_fdata().astype(np.float32)
 
 
