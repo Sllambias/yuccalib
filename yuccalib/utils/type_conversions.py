@@ -12,6 +12,8 @@ def read_any_file(imagepath, dtype=np.float32):
         return np.array(Image.open(imagepath).convert("L"), dtype=dtype)
     elif ext in ["csv", "txt"]:
         return np.atleast_1d(np.genfromtxt(imagepath, delimiter=",", dtype=dtype))
+    else:
+        print("File Type not recognized. Not loading anything")
 
 
 def np_to_nifti_with_empty_header(array):
