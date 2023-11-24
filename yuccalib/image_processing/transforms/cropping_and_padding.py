@@ -119,7 +119,6 @@ class CropPad(YuccaTransform):
         )
         if seg is None:
             return image_out, None
-
         seg_out[
             :,
             :,
@@ -286,8 +285,11 @@ class CropPad(YuccaTransform):
             mode="edge",
         )
 
-        if seg is None:
+        if seg is None:  # Reconstruction/inpainting
             return image_out, None
+
+        if len(seg.shape) == 1:  # Classification
+            return image_out, seg
 
         seg_out[:, :, :] = np.pad(
             seg[
