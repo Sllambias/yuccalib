@@ -18,7 +18,7 @@ class ResNet50(YuccaNet):
         starting_filters: int = 64,
         block=Bottleneck,
         layers=[3, 4, 6, 3],
-        num_cls_classes: int = 1000,
+        num_classes: int = 1000,
         num_seg_classes: int = 1000,
         zero_init_residual: bool = False,
         groups: int = 1,
@@ -30,6 +30,7 @@ class ResNet50(YuccaNet):
         super().__init__()
         self._norm_layer = norm_layer
         self.groups = groups
+        num_cls_classes = num_classes
         self.base_width = width_per_group
 
         self.inplanes = starting_filters
@@ -139,7 +140,7 @@ class ResNet50(YuccaNet):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x: Tensor, task: str) -> Tensor:
+    def forward(self, x: Tensor, task: str = None) -> Tensor:
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
@@ -154,14 +155,14 @@ class ResNet50(YuccaNet):
         high_level_features = self.layer4(x)  # Potential Skip Connection 4 Here
         # Outputs of layer1 are also known as "out" features for DeepLabV3+
 
-        if task == "Classification":
-            x = self.avgpool(high_level_features)
-            x = torch.flatten(x, 1)
-            x = self.fc(x)
-        if task == "Segmentation":
-            x = self.upsample_seg1(high_level_features)
-            x = self.upsample_seg2(x)
-        if task == "Reconstruction":
-            x = self.upsample_re1(high_level_features)
-            x = self.upsample_re2(x)
+        # if task == "Classification":
+        x = self.avgpool(high_level_features)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        # if task == "Segmentation":
+        #    x = self.upsample_seg1(high_level_features)
+        #    x = self.upsample_seg2(x)
+        # if task == "Reconstruction":
+        #    x = self.upsample_re1(high_level_features)
+        #    x = self.upsample_re2(x)
         return x
