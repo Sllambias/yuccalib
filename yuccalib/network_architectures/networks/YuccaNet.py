@@ -21,6 +21,9 @@ class YuccaNet(nn.Module):
         pass
 
     def predict(self, mode, data, patch_size, overlap, mirror=False):
+        if torch.cuda.is_available():
+            data = data.to("cuda")
+
         if mode == "3D":
             predict = self._predict3D
         if mode == "2D":
