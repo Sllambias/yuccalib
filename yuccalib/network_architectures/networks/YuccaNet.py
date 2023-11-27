@@ -54,8 +54,7 @@ class YuccaNet(nn.Module):
                 )
                 div += 4
             pred /= div
-
-    return pred
+        return pred
 
     def _predict3D(self, data, patch_size, overlap):
         """
