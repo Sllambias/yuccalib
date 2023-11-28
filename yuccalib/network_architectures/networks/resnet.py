@@ -19,7 +19,6 @@ class ResNet50(YuccaNet):
         block=Bottleneck,
         layers=[3, 4, 6, 3],
         num_classes: int = 1000,
-        num_seg_classes: int = 1000,
         zero_init_residual: bool = False,
         groups: int = 1,
         width_per_group: int = 64,
@@ -30,7 +29,7 @@ class ResNet50(YuccaNet):
         super().__init__()
         self._norm_layer = norm_layer
         self.groups = groups
-        num_cls_classes = num_classes
+        self.num_classes = num_classes
         self.base_width = width_per_group
 
         self.inplanes = starting_filters
@@ -59,17 +58,7 @@ class ResNet50(YuccaNet):
         )
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
-        self.fc = nn.Linear(512 * block.expansion, num_cls_classes)
-
-        self.upsample_re1 = nn.ConvTranspose2d(
-            512 * block.expansion, out_channels=input_channels, stride=2, kernel_size=2
-        )
-        self.upsample_re2 = nn.Upsample(scale_factor=8, mode="bilinear")
-
-        self.upsample_seg1 = nn.ConvTranspose2d(
-            512 * block.expansion, out_channels=num_seg_classes, stride=2, kernel_size=2
-        )
-        self.upsample_seg2 = nn.Upsample(scale_factor=8, mode="bilinear")
+        self.fc = nn.Linear(512 * block.expansion, self.num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -155,14 +144,13 @@ class ResNet50(YuccaNet):
         high_level_features = self.layer4(x)  # Potential Skip Connection 4 Here
         # Outputs of layer1 are also known as "out" features for DeepLabV3+
 
-        # if task == "Classification":
         x = self.avgpool(high_level_features)
         x = torch.flatten(x, 1)
         x = self.fc(x)
-        # if task == "Segmentation":
-        #    x = self.upsample_seg1(high_level_features)
-        #    x = self.upsample_seg2(x)
-        # if task == "Reconstruction":
-        #    x = self.upsample_re1(high_level_features)
-        #    x = self.upsample_re2(x)
+
         return x
+
+    def predict(self, mode, data, patch_size, overlap, mirror=False):
+        if torch.cuda.is_available():
+            data = data.to("cuda")
+        return self.forward(data)
