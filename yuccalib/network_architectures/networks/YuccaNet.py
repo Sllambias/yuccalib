@@ -24,41 +24,39 @@ class YuccaNet(nn.Module):
         if torch.cuda.is_available():
             data = data.to("cuda")
 
-        self.eval()
-        with torch.no_grad():
-            if mode == "3D":
-                predict = self._predict3D
-            if mode == "2D":
-                predict = self._predict2D
+        if mode == "3D":
+            predict = self._predict3D
+        if mode == "2D":
+            predict = self._predict2D
 
-            pred = predict(data, patch_size, overlap)
-            if mirror:
+        pred = predict(data, patch_size, overlap)
+        if mirror:
+            pred += torch.flip(
+                predict(torch.flip(data, (2,)), patch_size, overlap), (2,)
+            )
+            pred += torch.flip(
+                predict(torch.flip(data, (3,)), patch_size, overlap), (3,)
+            )
+            pred += torch.flip(
+                predict(torch.flip(data, (2, 3)), patch_size, overlap), (2, 3)
+            )
+            div = 4
+            if mode == "3D":
                 pred += torch.flip(
-                    predict(torch.flip(data, (2,)), patch_size, overlap), (2,)
+                    predict(torch.flip(data, (4,)), patch_size, overlap), (4,)
                 )
                 pred += torch.flip(
-                    predict(torch.flip(data, (3,)), patch_size, overlap), (3,)
+                    predict(torch.flip(data, (2, 4)), patch_size, overlap), (2, 4)
                 )
                 pred += torch.flip(
-                    predict(torch.flip(data, (2, 3)), patch_size, overlap), (2, 3)
+                    predict(torch.flip(data, (3, 4)), patch_size, overlap), (3, 4)
                 )
-                div = 4
-                if mode == "3D":
-                    pred += torch.flip(
-                        predict(torch.flip(data, (4,)), patch_size, overlap), (4,)
-                    )
-                    pred += torch.flip(
-                        predict(torch.flip(data, (2, 4)), patch_size, overlap), (2, 4)
-                    )
-                    pred += torch.flip(
-                        predict(torch.flip(data, (3, 4)), patch_size, overlap), (3, 4)
-                    )
-                    pred += torch.flip(
-                        predict(torch.flip(data, (2, 3, 4)), patch_size, overlap),
-                        (2, 3, 4),
-                    )
-                    div += 4
-                pred /= div
+                pred += torch.flip(
+                    predict(torch.flip(data, (2, 3, 4)), patch_size, overlap),
+                    (2, 3, 4),
+                )
+                div += 4
+            pred /= div
         return pred
 
     def _predict3D(self, data, patch_size, overlap):

@@ -29,7 +29,7 @@ class YuccaTransform(AbstractTransform):
         This allows different intensities for each
         sample in a batch, while using the same
         intensity for all modalities of a sample
-        and for both image and segmentation.
+        and for both image and label.
         This is extremely important for transforms
         such as rotation, where we must ensure
         data modalities and labels remain registered.

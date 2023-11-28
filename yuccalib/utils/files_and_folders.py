@@ -8,6 +8,7 @@ import shutil
 import os
 import warnings
 import yaml
+from PIL import Image
 from lightning.pytorch.callbacks import BasePredictionWriter
 from batchgenerators.utilities.file_and_folder_operations import (
     join,
@@ -136,25 +137,36 @@ def recursive_find_realpath(path):
     return os.path.join(*non_linked_dirs[::-1])
 
 
-def save_segmentation_from_numpy(seg, outpath, properties, compression=9):
+def save_nifti_from_numpy(pred, outpath, properties, compression=9):
     nib.openers.Opener.default_compresslevel = (
         compression  # slight hacky, but it is what it is
     )
-    seg = nib.Nifti1Image(seg, properties["affine"], dtype=np.uint8)
+    pred = nib.Nifti1Image(pred, properties["affine"], dtype=np.uint8)
     if properties["reoriented"]:
-        seg = reorient_nib_image(
-            seg, properties["new_orientation"], properties["original_orientation"]
+        pred = reorient_nib_image(
+            pred, properties["new_orientation"], properties["original_orientation"]
         )
-    seg.set_qform(properties["qform"])
-    seg.set_sform(properties["sform"])
+    pred.set_qform(properties["qform"])
+    pred.set_sform(properties["sform"])
     nib.save(
-        seg,
+        pred,
         outpath + ".nii.gz",
     )
-    del seg
+    del pred
 
 
-def save_segmentation_from_logits(
+def save_png_from_numpy(pred, outpath, properties, compression=9):
+    pred = Image.fromarray(pred)
+    pred.save(outpath)
+    del pred
+
+
+def save_txt_from_numpy(pred, outpath, properties):
+    np.savetxt(outpath, np.atleast_1d(pred).astype(np.uint8), delimiter=",")
+    del pred
+
+
+def save_prediction_from_logits(
     logits, outpath, properties, save_softmax=False, compression=9
 ):
     if save_softmax:
@@ -162,8 +174,13 @@ def save_segmentation_from_logits(
         np.savez_compressed(
             outpath + ".npz", data=softmax_result, properties=properties
         )
-    seg = np.argmax(logits, 1)[0]
-    save_segmentation_from_numpy(seg, outpath, properties, compression=compression)
+    pred = np.argmax(logits, 1)[0]
+    if properties.get("save_format") == "png":
+        save_png_from_numpy(pred, outpath, properties)
+    if properties.get("save_format") == "txt":
+        save_txt_from_numpy(pred, outpath, properties)
+    else:
+        save_nifti_from_numpy(pred, outpath, properties, compression=compression)
 
 
 def merge_softmax_from_folders(folders: list, outpath, method="sum"):
@@ -188,7 +205,7 @@ def merge_softmax_from_folders(folders: list, outpath, method="sum"):
             files_for_case = np.sum(files_for_case, axis=0)
 
         files_for_case = np.argmax(files_for_case, 0)
-        save_segmentation_from_numpy(
+        save_nifti_from_numpy(
             files_for_case,
             join(outpath, case[:-4]),
             properties=properties_for_case.item(),
@@ -197,7 +214,7 @@ def merge_softmax_from_folders(folders: list, outpath, method="sum"):
     del files_for_case, properties_for_case
 
 
-class WriteSegFromLogits(BasePredictionWriter):
+class WritePredictionFromLogits(BasePredictionWriter):
     def __init__(self, output_dir, save_softmax, write_interval):
         super().__init__(write_interval)
         self.output_dir = output_dir
@@ -211,9 +228,13 @@ class WriteSegFromLogits(BasePredictionWriter):
             data_dict["properties"],
             data_dict["case_id"],
         )
-        save_segmentation_from_logits(
+        save_prediction_from_logits(
             logits,
             join(self.output_dir, case_id),
             properties=properties,
             save_softmax=self.save_softmax,
         )
+
+
+# For backwards compatibility
+WriteSegFromLogits = WritePredictionFromLogits

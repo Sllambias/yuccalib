@@ -15,7 +15,7 @@ class Masking(YuccaTransform):
     def get_params(shape, ratio, start_idx):
         pass
 
-    def __mask__(self, image, seg, crop_start_idx):
+    def __mask__(self, image, label, crop_start_idx):
         pass
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
