@@ -12,9 +12,9 @@ class CopyImageToSeg(YuccaTransform):
         multiplicativeNoise_sigma
     """
 
-    def __init__(self, data_key="image", seg_key="seg"):
+    def __init__(self, data_key="image", label_key="label"):
         self.data_key = data_key
-        self.seg_key = seg_key
+        self.label_key = label_key
 
     @staticmethod
     def get_params():
@@ -32,7 +32,7 @@ class CopyImageToSeg(YuccaTransform):
         ), f"Incorrect data size or shape.\
             \nShould be (b, c, x, y, z) or (b, c, x, y) and is: {data_dict[self.data_key].shape}"
 
-        data_dict[self.data_key], data_dict[self.seg_key] = self.__copy__(
+        data_dict[self.data_key], data_dict[self.label_key] = self.__copy__(
             data_dict[self.data_key]
         )
         return data_dict

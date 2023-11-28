@@ -30,7 +30,7 @@ class Spatial(YuccaTransform):
     def __init__(
         self,
         data_key="image",
-        seg_key="seg",
+        label_key="label",
         crop=False,
         patch_size: Tuple[int] = None,
         random_crop=True,
@@ -44,11 +44,11 @@ class Spatial(YuccaTransform):
         z_rot_in_degrees=(0.0, 10.0),
         p_scale_per_sample=1,
         scale_factor=(0.85, 1.15),
-        skip_seg=False,
+        skip_label=False,
     ):
         self.data_key = data_key
-        self.seg_key = seg_key
-        self.skip_seg = skip_seg
+        self.label_key = label_key
+        self.skip_label = skip_label
         self.do_crop = crop
         self.patch_size = patch_size
         self.random_crop = random_crop
@@ -95,7 +95,7 @@ class Spatial(YuccaTransform):
     def __CropDeformRotateScale__(
         self,
         imageVolume,
-        segVolume,
+        labelVolume,
         patch_size,
         alpha,
         sigma,
@@ -103,7 +103,7 @@ class Spatial(YuccaTransform):
         y_rot,
         z_rot,
         scale_factor,
-        skip_seg,
+        skip_label,
     ):
         if not self.do_crop:
             patch_size = imageVolume.shape[2:]
@@ -167,19 +167,20 @@ class Spatial(YuccaTransform):
                     cval=0.0,
                 ).astype(imageVolume.dtype)
 
-        if not skip_seg:
-            segCanvas = np.zeros(
-                (segVolume.shape[0], segVolume.shape[1], *patch_size), dtype=np.float32
+        if not skip_label:
+            labelCanvas = np.zeros(
+                (labelVolume.shape[0], labelVolume.shape[1], *patch_size),
+                dtype=np.float32,
             )
 
-            # Mapping the segmentations to the distorted coordinates
-            for b in range(segVolume.shape[0]):
-                for c in range(segVolume.shape[1]):
-                    segCanvas[b, c] = map_coordinates(
-                        segVolume[b, c], coords, order=0, mode="constant", cval=0.0
-                    ).astype(segVolume.dtype)
-            return imageCanvas, segCanvas
-        return imageCanvas, segVolume
+            # Mapping the labelmentations to the distorted coordinates
+            for b in range(labelVolume.shape[0]):
+                for c in range(labelVolume.shape[1]):
+                    labelCanvas[b, c] = map_coordinates(
+                        labelVolume[b, c], coords, order=0, mode="constant", cval=0.0
+                    ).astype(labelVolume.dtype)
+            return imageCanvas, labelCanvas
+        return imageCanvas, labelVolume
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
         data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
@@ -207,10 +208,10 @@ class Spatial(YuccaTransform):
 
         (
             data_dict[self.data_key],
-            data_dict[self.seg_key],
+            data_dict[self.label_key],
         ) = self.__CropDeformRotateScale__(
             data_dict[self.data_key],
-            data_dict[self.seg_key],
+            data_dict[self.label_key],
             self.patch_size,
             deform_alpha,
             deform_sigma,
@@ -218,6 +219,6 @@ class Spatial(YuccaTransform):
             y_rot_rad,
             z_rot_rad,
             scale_factor,
-            self.skip_seg,
+            self.skip_label,
         )
         return data_dict

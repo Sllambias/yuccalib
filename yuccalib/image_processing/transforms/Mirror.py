@@ -15,36 +15,36 @@ class Mirror(YuccaTransform):
     def __init__(
         self,
         data_key="image",
-        seg_key="seg",
+        label_key="label",
         p_per_sample=1,
         axes=(0, 1, 2),
         p_mirror_per_axis=0.33,
-        skip_seg=False,
+        skip_label=False,
     ):
         self.data_key = data_key
-        self.seg_key = seg_key
+        self.label_key = label_key
         self.p_per_sample = p_per_sample
         self.p_mirror_per_axis = p_mirror_per_axis
         self.axes = axes
-        self.skip_seg = skip_seg
+        self.skip_label = skip_label
 
     @staticmethod
     def get_params():
         # No parameters to retrieve
         pass
 
-    def __mirror__(self, imageVolume, segVolume, axes):
+    def __mirror__(self, imageVolume, labelVolume, axes):
         # Input will be [c, x, y, z] or [c, x, y]
         if 0 in axes and np.random.uniform() < self.p_mirror_per_axis:
             imageVolume[:, :] = imageVolume[:, ::-1]
-            segVolume[:, :] = segVolume[:, ::-1]
+            labelVolume[:, :] = labelVolume[:, ::-1]
         if 1 in axes and np.random.uniform() < self.p_mirror_per_axis:
             imageVolume[:, :, :] = imageVolume[:, :, ::-1]
-            segVolume[:, :, :] = segVolume[:, :, ::-1]
+            labelVolume[:, :, :] = labelVolume[:, :, ::-1]
         if 2 in axes and np.random.uniform() < self.p_mirror_per_axis:
             imageVolume[:, :, :, :] = imageVolume[:, :, :, ::-1]
-            segVolume[:, :, :, :] = segVolume[:, :, :, ::-1]
-        return imageVolume, segVolume
+            labelVolume[:, :, :, :] = labelVolume[:, :, :, ::-1]
+        return imageVolume, labelVolume
 
     def __mirrorimage__(self, imageVolume, axes):
         # Input will be [c, x, y, z] or [c, x, y]
@@ -66,17 +66,17 @@ class Mirror(YuccaTransform):
 
         for b in range(data_dict[self.data_key].shape[0]):
             if np.random.uniform() < self.p_per_sample:
-                if self.skip_seg:
+                if self.skip_label:
                     data_dict[self.data_key][b] = self.__mirrorimage__(
                         data_dict[self.data_key][b], self.axes
                     )
                 else:
                     (
                         data_dict[self.data_key][b],
-                        data_dict[self.seg_key][b],
+                        data_dict[self.label_key][b],
                     ) = self.__mirror__(
                         data_dict[self.data_key][b],
-                        data_dict[self.seg_key][b],
+                        data_dict[self.label_key][b],
                         self.axes,
                     )
         return data_dict
