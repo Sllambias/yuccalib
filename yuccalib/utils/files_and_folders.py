@@ -174,7 +174,9 @@ def save_prediction_from_logits(
         np.savez_compressed(
             outpath + ".npz", data=softmax_result, properties=properties
         )
-    pred = np.argmax(logits, 1)[0]
+    if logits.shape[1] > 1:
+        logits = np.argmax(logits, 1)
+    pred = np.squeeze(logits)
     if properties.get("save_format") == "png":
         save_png_from_numpy(pred, outpath, properties)
     if properties.get("save_format") == "txt":
