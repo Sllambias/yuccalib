@@ -7,7 +7,8 @@ class Masking(YuccaTransform):
     CURRENTLY NOT IMPLEMENTED
     """
 
-    def __init__(self, data_key="image", mask_ratio: tuple | float = 0.25):
+    def __init__(self, mask=False, data_key="image", mask_ratio: tuple | float = 0.25):
+        self.mask = mask
         self.data_key = data_key
         self.mask_ratio = mask_ratio
 
@@ -20,4 +21,8 @@ class Masking(YuccaTransform):
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
         data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
+        if self.mask:
+            raise NotImplementedError(
+                "Masking is not implemented yet. It should not be enabled"
+            )
         return data_dict

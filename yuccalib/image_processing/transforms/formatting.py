@@ -79,6 +79,8 @@ class AddBatchDimension(YuccaTransform):
 
     def __unsqueeze__(self, data, label):
         data = data[np.newaxis]
+        if label is None:
+            return data, label
         if isinstance(label, list):
             label = [s[np.newaxis] for s in label]
         else:
