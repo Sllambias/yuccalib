@@ -162,7 +162,7 @@ def save_png_from_numpy(pred, outpath, properties, compression=9):
 
 
 def save_txt_from_numpy(pred, outpath, properties):
-    np.savetxt(outpath, np.atleast_1d(pred).astype(np.uint8), delimiter=",")
+    np.savetxt(outpath, np.atleast_1d(pred).astype(int), delimiter=",")
     del pred
 
 
