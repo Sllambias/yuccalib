@@ -14,7 +14,9 @@ def read_file_to_nifti_or_np(imagepath, dtype=np.float32):
     elif ext in ["csv", "txt"]:
         return np.atleast_1d(np.genfromtxt(imagepath, delimiter=",", dtype=dtype))
     else:
-        raise TypeError(f"File type invalid. Found extension: {ext} and expected one in [nii, nii.gz, png, csv, txt]")
+        raise TypeError(
+            f"File type invalid. Found extension: {ext} and expected one in [nii, nii.gz, png, csv, txt]"
+        )
 
 
 def np_to_nifti_with_empty_header(array):
@@ -25,12 +27,14 @@ def np_to_nifti_with_empty_header(array):
 
 
 def nifti_or_np_to_np(array: Union[np.ndarray, nib.Nifti1Image]) -> np.ndarray:
-    if isinstance(array, np.ndarray)
+    if isinstance(array, np.ndarray):
         return array
     if isinstance(array, nib.Nifti1Image):
         return array.get_fdata().astype(np.float32)
     else:
-        raise TypeError(f"File data type invalid. Found: {type(array)} and expected nib.Nifti1Image or np.ndarray")
+        raise TypeError(
+            f"File data type invalid. Found: {type(array)} and expected nib.Nifti1Image or np.ndarray"
+        )
 
 
 def png_to_nifti(path, maybe_to_grayscale=False, is_seg=False, to_label: int = None):
