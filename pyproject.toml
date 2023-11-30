@@ -23,7 +23,7 @@ dependencies = [
     'Pillow>=10.1.0',
     'pytest>=7.4.3',
     'scipy>=1.11.3',
-    'setuptools>=68.0.0',
+    'setuptools>=61.0.0',
     'scikit-image',
     'timm>=0.9.8',
 ]
