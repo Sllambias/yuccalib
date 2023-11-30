@@ -138,9 +138,8 @@ def recursive_find_realpath(path):
 
 
 def save_nifti_from_numpy(pred, outpath, properties, compression=9):
-    nib.openers.Opener.default_compresslevel = (
-        compression  # slight hacky, but it is what it is
-    )
+    # slight hacky, but it is what it is
+    nib.openers.Opener.default_compresslevel = compression
     pred = nib.Nifti1Image(pred, properties["affine"], dtype=np.uint8)
     if properties["reoriented"]:
         pred = reorient_nib_image(
@@ -162,7 +161,7 @@ def save_png_from_numpy(pred, outpath, properties, compression=9):
 
 
 def save_txt_from_numpy(pred, outpath, properties):
-    np.savetxt(outpath, np.atleast_1d(pred).astype(int), delimiter=",")
+    np.savetxt(outpath, np.atleast_1d(pred), fmt="%i", delimiter=",")
     del pred
 
 

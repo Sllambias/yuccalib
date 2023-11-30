@@ -2,9 +2,10 @@ import nibabel as nib
 import numpy as np
 import os
 from PIL import Image
+from typing import Union
 
 
-def read_any_file(imagepath, dtype=np.float32):
+def read_file_to_nifti_or_np(imagepath, dtype=np.float32):
     ext = imagepath.split(os.extsep, 1)[1]
     if ext in ["nii", "nii.gz"]:
         return nib.load(imagepath)
@@ -13,7 +14,7 @@ def read_any_file(imagepath, dtype=np.float32):
     elif ext in ["csv", "txt"]:
         return np.atleast_1d(np.genfromtxt(imagepath, delimiter=",", dtype=dtype))
     else:
-        print("File Type not recognized. Not loading anything")
+        raise TypeError(f"File type invalid. Found extension: {ext} and expected one in [nii, nii.gz, png, csv, txt]")
 
 
 def np_to_nifti_with_empty_header(array):
@@ -23,10 +24,13 @@ def np_to_nifti_with_empty_header(array):
     return image_file
 
 
-def nib_to_np(nib_image):
-    if not isinstance(nib_image, nib.Nifti1Image):
-        return nib_image
-    return nib_image.get_fdata().astype(np.float32)
+def nifti_or_np_to_np(array: Union[np.ndarray, nib.Nifti1Image]) -> np.ndarray:
+    if isinstance(array, np.ndarray)
+        return array
+    if isinstance(array, nib.Nifti1Image):
+        return array.get_fdata().astype(np.float32)
+    else:
+        raise TypeError(f"File data type invalid. Found: {type(array)} and expected nib.Nifti1Image or np.ndarray")
 
 
 def png_to_nifti(path, maybe_to_grayscale=False, is_seg=False, to_label: int = None):
