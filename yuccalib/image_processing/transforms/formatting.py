@@ -46,10 +46,11 @@ class NumpyToTorch(YuccaTransform):
 
     def __convert__(self, data, label):
         data = torch.tensor(data, dtype=torch.float32)
-        if isinstance(label, list):
-            label = [torch.tensor(i, dtype=self.label_dtype) for i in label]
-        else:
-            label = torch.tensor(label, dtype=self.label_dtype)
+        if label is not None:
+            if isinstance(label, list):
+                label = [torch.tensor(i, dtype=self.label_dtype) for i in label]
+            else:
+                label = torch.tensor(label, dtype=self.label_dtype)
         return data, label
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
