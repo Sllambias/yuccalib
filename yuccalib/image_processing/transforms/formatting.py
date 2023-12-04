@@ -38,20 +38,26 @@ class NumpyToTorch(YuccaTransform):
         self.label_key = label_key
         self.label_dtype = label_dtype
 
-    def get_params(self):
         if self.label_dtype == "int":
             self.label_dtype = torch.int32
         elif self.label_dtype == "float":
-            self.label_dtype = torch.float32
+            self.label_dtype = torch.float32  # TODO: Change this...
 
-    def __convert__(self, data, label):
-        data = torch.tensor(data, dtype=torch.float32)
-        if label is not None:
-            if isinstance(label, list):
-                label = [torch.tensor(i, dtype=self.label_dtype) for i in label]
-            else:
-                label = torch.tensor(label, dtype=self.label_dtype)
-        return data, label
+    def get_params(self):
+        pass
+
+    def __convert__(self, datadict):
+        data = torch.tensor(datadict[self.data_key], dtype=torch.float32)
+        label = datadict.get(self.label_key)
+
+        if label is None:
+            return {self.data_key: data}
+
+        if isinstance(label, list):
+            label = [torch.tensor(i, dtype=self.label_dtype) for i in label]
+        else:
+            label = torch.tensor(label, dtype=self.label_dtype)
+        return {self.data_key: data, self.label_key: label}
 
     def __call__(self, packed_data_dict=None, **unpacked_data_dict):
         data_dict = packed_data_dict if packed_data_dict else unpacked_data_dict
@@ -62,10 +68,7 @@ class NumpyToTorch(YuccaTransform):
             or data_len == 3  # (C, H, W)
         ), f"Incorrect data size or shape.\
             \nShould be (B, C, X, Y, Z) or (B, C, X, Y) or (C, X, Y, Z) or (C, X, Y) and is: {data_len}"
-        self.get_params()
-        data_dict[self.data_key], data_dict[self.label_key] = self.__convert__(
-            data_dict[self.data_key], data_dict[self.label_key]
-        )
+        data_dict = self.__convert__(data_dict)
         return data_dict
 
 
