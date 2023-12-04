@@ -1,8 +1,5 @@
 # %%
 import numpy as np
-import warnings
-
-warnings.filterwarnings("error")
 
 
 def dice(tp, fp, tn, fn):
