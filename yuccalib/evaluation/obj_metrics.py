@@ -1,10 +1,7 @@
 import numpy as np
-import warnings
 import cc3d
 from yuccalib.utils.nib_utils import get_nib_spacing
 from yuccalib.evaluation.metrics import sensitivity, precision, specificity, f1
-
-warnings.filterwarnings("error")
 
 
 def get_obj_stats_for_label(gt, pred, label, as_binary=False):
