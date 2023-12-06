@@ -25,6 +25,7 @@ import numpy as np
 import yucca
 import yuccalib
 import warnings
+import math
 from yuccalib.utils.files_and_folders import recursive_find_python_class
 from yuccalib.utils.kwargs import filter_kwargs
 
@@ -90,6 +91,7 @@ def find_optimal_tensor_dims(
     modalities,
     model_name,
     max_patch_size,
+    fixed_patch_size: tuple | list = None,
     max_memory_usage_in_gb=None,
 ):
     if max_memory_usage_in_gb is None:
@@ -145,6 +147,11 @@ def find_optimal_tensor_dims(
     est = 0
     idx = 0
     maxed_idxs = []
+    if fixed_patch_size is not None:
+        patch_size = fixed_patch_size
+        # first fix dimensions so they are divisible by 16 (otherwise issues with standard pools and strides)
+        patch_size = [math.ceil(i / 16) * 16 for i in patch_size]
+        max_patch_size = patch_size
     while not OOM_OR_MAXED:
         try:
             if np.prod(patch_size) >= absolute_max:
@@ -198,3 +205,14 @@ def find_optimal_tensor_dims(
         except torch.cuda.OutOfMemoryError:
             OOM_OR_MAXED = True
     return final_batch_size, final_patch_size
+
+
+if __name__ == "__main__":
+    batch_size, patch_size = find_optimal_tensor_dims(
+        dimensionality="2D",
+        num_classes=3,
+        modalities=1,
+        model_name="UNet",
+        max_patch_size=[187, 151],
+        fixed_patch_size=[187, 151],
+    )
